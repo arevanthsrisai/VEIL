@@ -1,0 +1,66 @@
+# Project State — VEIL
+
+## Current Phase
+Phase 10 — Deploy (BLOCKED on Voroa DB approval). Phases 0-9 complete.
+
+## Recovery History (2026-09-20/21)
+- Session suffered output-stream degradation; `db/schema.sql` was corrupted. No git commits existed, so no git restore was possible.
+- Snapshot taken BEFORE any modification: `../VEIL-recovery-snapshot-20260920-173944/` (outside repo).
+- Schema reconstructed from the verified code contract (all queries in src/lib + API routes grepped and mapped column-by-column), NOT from memory. Method: one-line-per-statement atomic bash writes (mid-stream degradation made large multi-line payload writes unreliable; ~15 degraded attempts stopped per §33/§34 before switching mechanisms).
+- Result: 9 tables (users, sessions, confessions, comments, reactions, reports, moderation_actions, notifications) + 6 indexes. Older spec tables (bookmarks, polls, poll_options, poll_votes, audit_logs, site_settings) intentionally OMITTED — zero code references; add when a feature needs them.
+- Cross-checked: every application query maps to a schema object; FK ordering valid; idempotent DDL; no secrets.
+- The corrupted original also contained an injected junk text fragment (treated as untrusted, ignored).
+
+
+## Stack Decision
+- Next.js 16.3.5 (App Router, React 19, Turbopack) — one deployable
+- PostgreSQL on Voroa (NOT Neon) — proposal `yBnMsOJcTDO2GLEYXQLtbh4mLCVHFLPLkmaAf1Dgdpc` submitted (db `amrita_ap_confessions`, PG 17), STILL awaiting dashboard approval
+- Tailwind CSS v4 + shadcn/ui (base-nova preset, Base UI primitives)
+- Custom auth: bcryptjs + DB-backed httpOnly session cookies
+- Vitest (36 unit tests) + Playwright E2E (32 tests listed, need DATABASE_URL to run)
+- Hosting target: Voroa web service; Turnstile optional (env-gated)
+
+## Completed Tasks
+- [x] Phase 0: git init + remote + state files + timeout-check tooling (`.opencode/timeout-check.mjs`)
+- [x] Phase 1a: Next.js 16 scaffold (scaffoldtmp -> moved into root), bcryptjs+pg+@types/pg, shadcn init -d (base-nova), 15 UI components
+- [x] Phase 1b: `db/schema.sql` written (14 tables, idempotent). DB creation pending approval.
+- [x] Phase 2: Auth (src/lib/auth.ts, db.ts, 4 auth routes, bootstrap-admin.mjs, vitest) — 13/13 tests
+- [x] Phase 3: Confessions API + feed/detail/login/register pages — keyset pagination, myReactions
+- [x] Phase 4: Comments/reactions/reports APIs + UI (optimistic reactions, report dialog) — 24/24 tests
+- [x] Phase 5: Moderation/admin APIs + pages (queue tabs, stats, role management, notification bell) — 36/36 tests; toFeedItem deduped
+- [x] Phase 6: /popular, /archive (date-grouped), /activity, /about|rules|privacy + confession-list.tsx shared helper
+- [x] Phase 7: Turnstile gate (src/lib/turnstile.ts + widget on login/register, env-gated), race-safe moderation (`WHERE status='PENDING' RETURNING`), transactional side-effects (db.ts transaction()), avatarEmoji field-name fix, rate limits (login 10/15min per IP, register 5/h per IP, reactions 30/h per user)
+- [x] Phase 8: Playwright E2E suite (5 specs, 32 tests), vitest.config.ts scoping, test:e2e script
+- [x] Phase 9: Security audit (independent, security-auditor) — SHIP for V1, no critical/high. Remediated: M1 (login/register rate limits), M2 (reaction quota), M3 (notifications UUID validation + cap 100), L1 (dbError no longer echoes err.message — generic 500 + console.error), L3 (security headers in next.config.ts), L4 (moderation fully transactional). Skipped (LOW/INFO accepted): L2 avatar emoji whitelist (no XSS possible), L5 __Host- prefix, L6 ops script argv password.
+- [x] Phase 9 visual pass: Base UI nativeButton a11y bug fixed (8 render-prop Buttons), emoji picker aria-labels, nickname maxLength 30. DOM/a11y inspection verified /login + /register structure. **Screenshot visual inspection NOT possible with current model (no image input) — flagged for a vision-capable pass.**
+
+## Verification Status
+- `npx tsc --noEmit`: CLEAN (re-run after schema recovery, 2026-09-21)
+- `npm test`: 36/36 (3 files) (re-run after schema recovery, 2026-09-21)
+- `npm run build`: CLEAN (30 routes, DATABASE_URL unset) (re-run after schema recovery, 2026-09-21)
+- db/schema.sql: reconstructed + full read-back verified (no truncation/duplication/malformed SQL)
+- `npx playwright test --list`: 32 tests, 5 files, 2 projects
+- `npm audit`: 0 vulnerabilities
+- Browser: no console errors on /login, /register (except expected 401s from logged-out /api/auth/me probe)
+- NOT verified: live DB flows (register→me→logout cycle), feed with real data, E2E run, feed visual inspection — ALL need DATABASE_URL
+
+## Failed Tasks
+- E2E-engineer subagent failed twice (aborted, then empty report) — E2E suite written by orchestrator instead, verified green.
+
+## Known Issues
+- Graphify graph current (568 nodes, 1206 edges, graphify-out/). Update with `graphify update .` after major changes. tree_sitter_sql missing (schema.sql not indexed) — optional: `pip install "graphifyy[sql]"`.
+- Timeout model checks: `node .opencode/timeout-check.mjs` (verified passing).
+- Home dir `C:/Users/Revanth` is itself a git repo (harmless; Next build warns about ignoring its package-lock.json).
+- AGENTS.md was overwritten by `next build` agent-file generation once — restored with nextjs-agent-rules block preserved; commit it to keep tree clean.
+
+## Deployment Status
+- Not started. BLOCKED on: Voroa DB approval (proposal above), then DATABASE_URL env var.
+
+## Last Successful Checkpoint
+- Phase 9 complete (security audit + remediation, all checks green).
+
+## Remaining Work
+1. **USER: approve Voroa DB proposal in dashboard** (Settings → API tokens) — proposal `yBnMsOJcTDO2GLEYXQLtbh4mLCVHFLPLkmaAf1Dgdpc`
+2. Get connection string (Voroa MCP `get_connection_string`), set DATABASE_URL locally, apply db/schema.sql, run live smoke test + E2E + feed visual check
+3. Create Voroa web service (propose), set env vars (DATABASE_URL, TURNSTILE keys when ready), deploy
+4. Verify live (health check, register/login smoke), push to GitHub
