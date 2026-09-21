@@ -16,7 +16,7 @@ Phase 10 — Deploy (BLOCKED on Voroa DB approval). Phases 0-9 complete.
 - Schema applied to Neon via Neon MCP transaction (13 statements, idempotent) — verified live: 7 tables, 12 indexes, 43 columns. db/schema.sql is the source of truth (NOT rewritten).
 - `DATABASE_URL` in `.env.local` (gitignored) = Neon POOLED connection string. Credentials never printed/committed. NOTE: credentials were shared in chat by the user — recommend rotating the Neon password later.
 - De-Voroa'd: db.ts error message now generic; AGENTS.md stack line updated to Neon. Voroa VEIL project + old proposal left in place (unused, no config committed).
-- Local dev tooling: scripts/dev-db.mjs (embedded PG 17, kept for offline dev), scripts/db-verify.mjs, scripts/seed-e2e.mjs, scripts/probe-report.mjs.
+- Local dev tooling: scripts/dev-db.mjs (embedded PG 17, kept for offline dev), scripts/db-verify.mjs, scripts/seed-e2e.mjs.
 - Playwright: channel "chrome" (system Chrome; CDN download blocked), workers 1 (this machine OOMs with parallel browsers), E2E_SKIP_RATE_LIMIT=1 env-gated bypass in webServer.
 - **E2E: 32/32 PASSED against Neon** (desktop + mobile). App bugs found and fixed by E2E: navbar stale after register/login (window.location.assign fix), archive missing 401 redirect (router was undefined — import added), detail API r.counts SQL bug (jsonb_object_agg level restored), reaction buttons had no accessible names (aria-labels added), 💀 skull reaction added.
 - Verified: tsc CLEAN, vitest 33/33, build CLEAN (30 routes).

@@ -47,3 +47,5 @@ graphify-out/
 .playwright-mcp/
 *.tmp
 .pgdata/
+.pgdata-*.log
+.pgdata-*.err.log
