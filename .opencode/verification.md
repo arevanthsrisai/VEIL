@@ -10,6 +10,16 @@ Status legend: [ ] pending  [x] pass  [f] fail  [~] partial
 - [~] Live PostgreSQL execution NOT performed (no local PG server; production Voroa DB must not be used as a test environment)
 - Security review: Phase 9 independent audit (security-auditor) stands — zero application-code delta this session; only db/schema.sql was reconstructed and it was cross-checked against the code contract.
 
+## Public Sharing (2026-09-21)
+- [x] Approved post → public URL /post/[id] → 200 without auth (server-side enforced)
+- [x] Pending/rejected post → 404 for non-author/staff (no existence oracle)
+- [x] UUID validation before DB hit; malformed IDs → 404
+- [x] Share/Copy Link: Web Share API + clipboard fallback + "Copied" state
+- [x] No identity leakage (nickname/avatar only; identityless posts reveal nothing)
+- [x] Comments fully removed (UI, APIs, schema, notifications, tests)
+- [~] Browser/E2E run: NOT RUN (needs DATABASE_URL)
+- [~] Screenshot visual inspection: NOT PERFORMED (no image input this session)
+
 ## Authentication
 - [ ] Registration works (no email required)
 - [ ] Username never displayed publicly

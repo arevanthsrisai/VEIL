@@ -11,6 +11,18 @@ Phase 10 — Deploy (BLOCKED on Voroa DB approval). Phases 0-9 complete.
 - Cross-checked: every application query maps to a schema object; FK ordering valid; idempotent DDL; no secrets.
 - The corrupted original also contained an injected junk text fragment (treated as untrusted, ignored).
 
+## Wave: Public sharing + comments removal + hardening (2026-09-21)
+- COMMENTS REMOVED per spec (user decision): comments table + FKs dropped from schema BEFORE first DB apply (DB not created yet — no destructive migration); comment UI (comments-section.tsx deleted, moderation comments tab, activity comments tab), comment APIs (2 route dirs deleted), comment stats/notifications types removed. createReport is confession-only now.
+- PUBLIC SHARING: ShareButton component (Web Share API + clipboard fallback with execCommand for non-secure contexts, subtle "Copied" state) on approved posts.
+- ROUTE RENAME: /confession/[id] → /post/[id] (public page route); all internal links updated (feed, notification-bell, moderation-queue, e2e specs). API paths (/api/confessions) kept — internal, rename deferred.
+- DETAIL API NOW PUBLIC for APPROVED posts (was 401 for logged-out); PENDING/REJECTED still 404 for non-author/staff; UUID regex validation before DB hit; targeted PK-indexed reaction aggregate (was full-table scan).
+- Reports now require APPROVED target (security audit finding LOW-1 fixed).
+- HARD-RULE FIX: "Amrita AP Confessions" removed from layout metadata/footer, about/rules/privacy/admin/moderation pages, navbar (was a hard-rule violation missed by the previous session).
+- Verified: tsc CLEAN, vitest 33/33 (3 comment tests removed), build CLEAN (29 routes, /post/[id] present).
+- Independent security audit (security-auditor): NO critical/high. PASS on all areas. Noted: MEDIUM-1 X-Forwarded-For spoofing (verify Voroa proxy overwrites it in prod), MEDIUM-2 Turnstile off when secret unset (documented ceiling — set key in prod).
+- E2E: NOT RUN (blocked on DATABASE_URL — Voroa DB proposal vFz4FfQk0M7fM4MAXE-OOx6wGVPZYPoJcKic_MjHs9U awaiting dashboard approval).
+
+
 
 ## Stack Decision
 - Next.js 16.3.5 (App Router, React 19, Turbopack) — one deployable
