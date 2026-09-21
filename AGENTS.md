@@ -16,7 +16,7 @@ Veil (styled **VEIL**) is a private-feeling, anonymous campus knowledge-sharing 
 ## Stack
 
 - **Framework**: Next.js 16 App Router (React 19 + Node API routes in one deployable, Turbopack)
-- **DB**: Voroa Postgres (NOT Neon) — schema in `db/schema.sql`, applied via `db/migrate` scripts or Voroa MCP
+- **DB**: Neon Postgres — schema in `db/schema.sql`, applied via Neon MCP or psql
 - **Auth**: bcryptjs + DB-backed session cookies (httpOnly, SameSite=Lax). No email/phone/ID required.
 - **Styling**: Tailwind CSS v4 + shadcn/ui components (base-nova preset) in `src/components/ui/`
 - **Tests**: Vitest (unit, `*.test.ts`) + Playwright (E2E, `e2e/`)

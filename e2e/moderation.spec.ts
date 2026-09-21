@@ -20,11 +20,13 @@ test.describe("moderation gating", () => {
   test("reporting a confession succeeds", async ({ page }) => {
     const user = uniqueUser();
     await registerViaUi(page, user);
-    await page.goto("/");
-    const reportTrigger = page.getByRole("button", { name: "Report" }).first();
-    const anyCard = await page.getByText("relative", { exact: false }).count();
-    test.skip(anyCard === 0, "no confessions visible in feed to report");
-    await reportTrigger.click();
+    const feed = await page.request.get("/api/confessions?limit=1");
+    const data = (await feed.json()) as {
+      confessions: { id: string }[];
+    };
+    test.skip(data.confessions.length === 0, "no approved confession seeded");
+    await page.goto(`/post/${data.confessions[0].id}`);
+    await page.getByRole("button", { name: "Report" }).click();
     await page.getByRole("button", { name: /Spam/ }).click();
     await page.getByRole("button", { name: /Send|Submit/i }).click();
     await expect(page.getByText("Report received")).toBeVisible();

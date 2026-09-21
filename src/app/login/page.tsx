@@ -40,7 +40,7 @@ export default function LoginPage() {
         setError(data?.error ?? "Login failed. Try again.")
         return
       }
-      router.push("/")
+      window.location.assign("/")
       router.refresh()
     } catch {
       setError("Login failed. Try again.")

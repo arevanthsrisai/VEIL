@@ -2,7 +2,7 @@ import { query } from "./db";
 import type { PublicUser } from "./auth";
 import type { ConfessionRow, ReactionCounts } from "./confessions";
 
-export const ALLOWED_REACTION_EMOJI = ["🔥", "😂", "❤️", "😮", "😢", "👍"] as const;
+export const ALLOWED_REACTION_EMOJI = ["🔥", "😂", "❤️", "😮", "😢", "👍", "💀"] as const;
 export type AllowedEmoji = (typeof ALLOWED_REACTION_EMOJI)[number];
 
 const ALLOWED_SET = new Set<string>(ALLOWED_REACTION_EMOJI);

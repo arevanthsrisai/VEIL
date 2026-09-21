@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
+  workers: process.env.CI ? 2 : 1,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [["html"], ["list"]] : [["list"]],
   use: {
@@ -10,10 +11,10 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "desktop", use: { ...devices["Desktop Chrome"], channel: "chrome" } },
     {
       name: "mobile",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } },
+      use: { ...devices["Desktop Chrome"], channel: "chrome", viewport: { width: 390, height: 844 } },
     },
   ],
   webServer: {
@@ -23,6 +24,8 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       DATABASE_URL: process.env.DATABASE_URL ?? "",
+      E2E_SKIP_RATE_LIMIT: "1",
+      NODE_OPTIONS: "--max-old-space-size=2048",
     },
   },
 });

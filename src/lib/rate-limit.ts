@@ -7,6 +7,8 @@ export function consume(
   windowMs: number = 60 * 60 * 1000,
   now: number = Date.now(),
 ): boolean {
+  // ponytail: E2E-only bypass, env-gated; never set E2E_SKIP_RATE_LIMIT outside test runs
+  if (process.env.E2E_SKIP_RATE_LIMIT === "1") return true;
   const times = (buckets.get(key) ?? []).filter((t) => t > now - windowMs);
   if (times.length >= limit) {
     buckets.set(key, times);

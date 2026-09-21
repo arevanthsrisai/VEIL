@@ -201,9 +201,13 @@ export async function getConfessionById(
      FROM confessions c
      JOIN users u ON u.id = c.author_id
      LEFT JOIN (
-       SELECT confession_id, emoji, COUNT(*)::int AS cnt
-       FROM reactions WHERE confession_id = $1
-       GROUP BY confession_id, emoji
+       SELECT confession_id, jsonb_object_agg(emoji, cnt) AS counts
+       FROM (
+         SELECT confession_id, emoji, COUNT(*)::int AS cnt
+         FROM reactions WHERE confession_id = $1
+         GROUP BY confession_id, emoji
+       ) s
+       GROUP BY confession_id
      ) r ON r.confession_id = c.id
      ${mineJoin}
      WHERE c.id = $1`,

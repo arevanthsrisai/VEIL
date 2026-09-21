@@ -2,6 +2,18 @@
 
 Status legend: [ ] pending  [x] pass  [f] fail  [~] partial
 
+## Neon Migration + E2E (2026-09-22)
+- [x] Schema applied to Neon (7 tables, 12 indexes, 43 columns) — verified via live metadata queries
+- [x] App connects to Neon (pooled URL, sslmode=require)
+- [x] npx tsc --noEmit: CLEAN
+- [x] npm test: 33/33
+- [x] npm run build: CLEAN (30 routes)
+- [x] Playwright E2E: 32/32 PASSED against Neon (desktop + mobile, 1 worker)
+- [x] App bugs found+fixed by E2E: navbar stale auth after register/login, archive 401 redirect (router import), detail API r.counts SQL, reaction button aria-labels, 💀 reaction
+- [~] Live production deployment: pending (hosting TBD — Neon DB ready)
+- [~] Screenshot visual inspection: NOT PERFORMED (no image input this session)
+- [x] No secrets committed (.env.local gitignored; credentials shared in chat by user — rotate recommended)
+
 ## Schema Recovery (2026-09-21)
 - [x] db/schema.sql reconstructed from verified code contract (9 tables + 6 indexes)
 - [x] Full read-back: no truncation, no duplicated sections, no malformed SQL

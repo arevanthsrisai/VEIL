@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 
 const MISSING_DB_URL =
-  "DATABASE_URL is not set. Set it to a Voroa Postgres connection string.";
+  "DATABASE_URL is not set. Set it to a PostgreSQL connection string.";
 
 type TxClient = {
   query: (text: string, params?: unknown[]) => Promise<{ rows: unknown[] }>;

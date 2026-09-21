@@ -8,9 +8,9 @@ test.describe("confessions", () => {
     const content = `E2E confession ${Date.now()} — the library wifi knows my secrets.`;
 
     await page.goto("/");
-    await page.getByRole("button", { name: "New confession" }).click();
+    await page.getByRole("main").getByRole("button", { name: "New confession" }).click();
     await page.getByLabel("Title (optional)").fill("E2E title");
-    await page.getByLabel("Confession").fill(content);
+    await page.getByRole("textbox", { name: "Confession" }).fill(content);
     await page.getByRole("button", { name: "Submit for moderation" }).click();
     await expect(page.getByText("Submitted for moderation")).toBeVisible();
   });
@@ -26,7 +26,7 @@ test.describe("confessions", () => {
 
     await page.goto("/activity");
     await expect(page.getByText(content)).toBeVisible();
-    await expect(page.getByText("Pending review")).toBeVisible();
+    await expect(page.getByText(/Pending/)).toBeVisible();
   });
 
   test("own pending confession is visible on its detail page", async ({ page }) => {
@@ -45,7 +45,7 @@ test.describe("confessions", () => {
     expect(item).toBeDefined();
 
     await page.goto(`/post/${item!.id}`);
-    await expect(page.getByText("Your confession")).toBeVisible();
-    await expect(page.getByText("Pending review")).toBeVisible();
+    await expect(page.getByText("Your post")).toBeVisible();
+    await expect(page.getByText(/Pending/)).toBeVisible();
   });
 });

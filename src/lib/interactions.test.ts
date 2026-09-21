@@ -23,7 +23,7 @@ describe("validateReportReason", () => {
 
 describe("isAllowedEmoji", () => {
   it("accepts the whitelist", () => {
-    for (const e of ["🔥", "😂", "❤️", "😮", "😢", "👍"]) expect(isAllowedEmoji(e)).toBe(true);
+    for (const e of ["🔥", "😂", "❤️", "😮", "😢", "👍", "💀"]) expect(isAllowedEmoji(e)).toBe(true);
   });
   it("rejects others", () => {
     expect(isAllowedEmoji("💩")).toBe(false);

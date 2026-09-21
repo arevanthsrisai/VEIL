@@ -1,0 +1,774 @@
+The files belonging to this database system will be owned by user "Revanth".
+This user must also own the server process.
+
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+
+
+creating directory C:/Users/Revanth/Desktop/personal_projects/VEIL/.pgdata ... 
+ok
+
+creating subdirectories ... 
+ok
+
+selecting dynamic shared memory implementation ... windows
+selecting default "max_connections" ... 
+100
+selecting default "shared_buffers" ... 
+128MB
+selecting default time zone ... 
+Asia/Calcutta
+creating configuration files ... 
+ok
+running bootstrap script ... 
+ok
+
+performing post-bootstrap initialization ... 
+ok
+syncing data to disk ... 
+ok
+
+Success. You can now start the database server using:
+
+    ^"C^:^\Users^\Revanth^\Desktop^\personal^_projects^\VEIL^\node^_modules^\^@embedded^-postgres^\windows^-x64^\native^\bin^\pg^_ctl^" -D ^"C^:^\Users^\Revanth^\Desktop^\personal^_projects^\VEIL^\^.pgdata^" -l logfile start
+
+
+2026-09-21 11:44:48.374 IST [30076] LOG:  starting PostgreSQL 17.10 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit
+
+2026-09-21 11:44:48.380 IST [30076] LOG:  listening on IPv6 address "::1", port 54329
+
+2026-09-21 11:44:48.380 IST [30076] LOG:  listening on IPv4 address "127.0.0.1", port 54329
+
+2026-09-21 11:44:48.432 IST [58992] LOG:  database system was shut down at 2026-09-21 11:44:45 IST
+
+2026-09-21 11:44:48.461 IST [30076] LOG:  database system is ready to accept connections
+
+READY postgres://127.0.0.1:54329/veil_dev (credentials in .env.local, gitignored)
+2026-09-21 11:49:48.424 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 11:51:40.488 IST [21772] LOG:  checkpoint complete: wrote 1032 buffers (6.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=112.016 s, sync=0.042 s, total=112.064 s; sync files=343, longest=0.002 s, average=0.001 s; distance=5080 kB, estimate=5080 kB; lsn=0/1A68EC8, redo lsn=0/1A68E38
+
+2026-09-21 12:24:48.562 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 12:24:50.225 IST [21772] LOG:  checkpoint complete: wrote 15 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.644 s, sync=0.002 s, total=1.663 s; sync files=6, longest=0.001 s, average=0.001 s; distance=33 kB, estimate=4575 kB; lsn=0/1A71678, redo lsn=0/1A71620
+
+2026-09-21 14:59:51.600 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 14:59:52.815 IST [21772] LOG:  checkpoint complete: wrote 12 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.197 s, sync=0.003 s, total=1.216 s; sync files=9, longest=0.002 s, average=0.001 s; distance=1 kB, estimate=4118 kB; lsn=0/1A71BE8, redo lsn=0/1A71B90
+
+2026-09-21 16:03:35.142 IST [64312] ERROR:  column r.counts does not exist at character 152
+2026-09-21 16:03:35.142 IST [64312] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 16:03:35.142 IST [64312] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 16:03:35.178 IST [55776] ERROR:  column r.counts does not exist at character 152
+2026-09-21 16:03:35.178 IST [55776] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 16:03:35.178 IST [55776] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 16:04:35.234 IST [48832] ERROR:  column r.counts does not exist at character 152
+2026-09-21 16:04:35.234 IST [48832] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 16:04:35.234 IST [48832] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 16:04:35.262 IST [39564] ERROR:  column r.counts does not exist at character 152
+2026-09-21 16:04:35.262 IST [39564] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 16:04:35.262 IST [39564] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 16:04:51.927 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 16:04:53.799 IST [21772] LOG:  checkpoint complete: wrote 18 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.851 s, sync=0.004 s, total=1.872 s; sync files=14, longest=0.002 s, average=0.001 s; distance=19 kB, estimate=3708 kB; lsn=0/1A76BB0, redo lsn=0/1A76B58
+
+2026-09-21 16:05:05.335 IST [9336] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 16:09:51.805 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 16:09:52.370 IST [21772] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.555 s, sync=0.004 s, total=0.566 s; sync files=6, longest=0.002 s, average=0.001 s; distance=10 kB, estimate=3338 kB; lsn=0/1A79760, redo lsn=0/1A79708
+
+2026-09-21 17:27:43.195 IST [54644] ERROR:  duplicate key value violates unique constraint "users_username_lower_idx"
+2026-09-21 17:27:43.195 IST [54644] DETAIL:  Key (lower(username))=(user_mub6xs6kl3) already exists.
+2026-09-21 17:27:43.195 IST [54644] STATEMENT:  INSERT INTO users (username, password_hash, nickname, avatar_emoji)
+	       VALUES ($1, $2, $3, $4)
+	       RETURNING id, nickname, avatar_emoji, role
+
+2026-09-21 17:27:45.210 IST [44692] ERROR:  column r.counts does not exist at character 152
+2026-09-21 17:27:45.210 IST [44692] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 17:27:45.210 IST [44692] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 17:27:45.250 IST [63784] ERROR:  column r.counts does not exist at character 152
+2026-09-21 17:27:45.250 IST [63784] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 17:27:45.250 IST [63784] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 17:27:59.669 IST [51956] ERROR:  column r.counts does not exist at character 152
+2026-09-21 17:27:59.669 IST [51956] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 17:27:59.669 IST [51956] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 17:27:59.686 IST [49536] ERROR:  column r.counts does not exist at character 152
+2026-09-21 17:27:59.686 IST [49536] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 17:27:59.686 IST [49536] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+TopMemoryContext: 97792 total in 5 blocks; 12184 free (10 chunks); 85608 used
+  
+TopTransactionContext: 8192 total in 1 blocks; 7640 free (0 chunks); 552 used
+  RI compare cache: 8192 total in 1 blocks; 2672 free (0 chunks); 5520 used
+  RI query cache: 8192 total in 1 blocks; 1640 free (0 chunks); 6552 used
+  RI constraint cache: 40640 total in 2 blocks; 2672 free (0 chunks); 37968 used
+  Type information cache: 24368 total in 2 blocks; 2672 free (0 chunks); 21696 used
+  TableSpace cache: 8192 total in 1 blocks; 2152 free (0 chunks); 6040 used
+  Operator lookup cache: 24576 total in 2 blocks; 10816 free (4 chunks); 13760 used
+  search_path processing cache: 8192 total in 1 blocks; 5656 free (7 chunks); 2536 used
+  RowDescriptionContext: 8192 total in 1 blocks; 5896 free (1 chunks); 2296 used
+  MessageContext: 8192 total in 1 blocks; 6920 free (1 chunks); 1272 used
+    unnamed prepared statement: 60168 total in 4 blocks; 13056 free (4 chunks); 47112 used
+      CachedPlanSource: 16384 total in 5 blocks; 2416 free (0 chunks); 13968 used: SELECT c.id, c.title, c.content, c.created_at, u.nickname, u.avatar_emoji,             COALESCE(r.co...
+  Operator class cache: 8192 total in 1 blocks; 616 free (0 chunks); 7576 used
+  smgr relation table: 32768 total in 3 blocks; 16904 free (9 chunks); 15864 used
+  PgStat Shared Ref Hash: 7216 total in 2 blocks; 712 free (0 chunks); 6504 used
+  PgStat Shared Ref: 8192 total in 4 blocks; 3512 free (5 chunks); 4680 used
+  PgStat Pending: 16384 total in 5 blocks; 2520 free (10 chunks); 13864 used
+  TransactionAbortContext: 32768 total in 1 blocks; 32528 free (0 chunks); 240 used
+  Portal hash: 8192 total in 1 blocks; 616 free (0 chunks); 7576 used
+  TopPortalContext: 8192 total in 1 blocks; 7952 free (1 chunks); 240 used
+  Relcache by OID: 16384 total in 2 blocks; 3608 free (3 chunks); 12776 used
+  CacheMemoryContext: 524288 total in 7 blocks; 1816 free (5 chunks); 522472 used
+    CachedPlanSource: 4096 total in 3 blocks; 1824 free (2 chunks); 2272 used: SELECT 1 FROM ONLY "public"."users" x WHERE "id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE OF x
+      CachedPlanQuery: 4096 total in 3 blocks; 1176 free (0 chunks); 2920 used
+    SPI Plan: 1024 total in 1 blocks; 624 free (0 chunks); 400 used
+    index info: 2048 total in 2 blocks; 648 free (1 chunks); 1400 used: users_username_lower_idx
+    index info: 2048 total in 2 blocks; 952 free (1 chunks); 1096 used: users_pkey
+    index info: 2048 total in 2 blocks; 952 free (1 chunks); 1096 used: sessions_pkey
+    index info: 3072 total in 2 blocks; 1080 free (1 chunks); 1992 used: pg_constraint_conrelid_contypid_conname_index
+    index info: 1024 total in 1 blocks; 24 free (0 chunks); 1000 used: pg_statistic_ext_relid_index
+    index info: 2048 total in 2 blocks; 712 free (2 chunks); 1336 used: notifications_user_idx
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: notifications_pkey
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_index_indrelid_index
+    index info: 2048 total in 2 blocks; 640 free (2 chunks); 1408 used: pg_attrdef_adrelid_adnum_index
+    index info: 2048 total in 2 blocks; 608 free (1 chunks); 1440 used: pg_db_role_setting_databaseid_rol_index
+    index info: 3072 total in 2 blocks; 1112 free (2 chunks); 1960 used: pg_opclass_am_name_nsp_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_foreign_data_wrapper_name_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_enum_oid_index
+    index info: 2048 total in 2 blocks; 568 free (3 chunks); 1480 used: pg_class_relname_nsp_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_foreign_server_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_publication_pubname_index
+    index info: 3072 total in 2 blocks; 936 free (2 chunks); 2136 used: pg_statistic_relid_att_inh_index
+    index info: 2048 total in 2 blocks; 568 free (3 chunks); 1480 used: pg_cast_source_target_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_language_name_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_transform_oid_index
+    
+index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_collation_oid_index
+    index info: 3072 total in 2 blocks; 832 free (1 chunks); 2240 used: pg_amop_fam_strat_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_index_indexrelid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_ts_template_tmplname_index
+    index info: 3072 total in 2 blocks; 1256 free (2 chunks); 1816 used: pg_ts_config_map_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_opclass_oid_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_foreign_data_wrapper_oid_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_publication_namespace_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_event_trigger_evtname_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_statistic_ext_name_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_publication_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_ts_dict_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_event_trigger_oid_index
+    index info: 3072 total in 2 blocks; 1192 free (2 chunks); 1880 used: pg_conversion_default_index
+    index info: 3072 total in 2 blocks; 904 free (1 chunks); 2168 used: pg_operator_oprname_l_r_n_index
+    index info: 2048 total in 2 blocks; 640 free (3 chunks); 1408 used: pg_trigger_tgrelid_tgname_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_extension_oid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_enum_typid_label_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_ts_config_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_user_mapping_oid_index
+    index info: 3072 total in 2 blocks; 1256 free (2 chunks); 1816 used: pg_opfamily_am_name_nsp_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_foreign_table_relid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_type_oid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_aggregate_fnoid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_constraint_oid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_rewrite_rel_rulename_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_ts_parser_prsname_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_ts_config_cfgname_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_ts_parser_oid_index
+    index info: 2048 total in 2 blocks; 752 free (2 chunks); 1296 used: pg_publication_rel_prrelid_prpubid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_operator_oid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_namespace_nspname_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_ts_template_oid_index
+    index info: 3072 total in 2 blocks; 1112 free (2 chunks); 1960 used: pg_amop_opr_fam_index
+    index info: 3072 total in 2 blocks; 1224 free (3 chunks); 1848 used: pg_default_acl_role_nsp_obj_index
+    index info: 3072 total in 2 blocks; 1256 free (2 chunks); 1816 used: pg_collation_name_enc_nsp_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_publication_rel_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_range_rngtypid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_ts_dict_dictname_index
+    index info: 2048 total in 2 blocks; 568 free (3 chunks); 1480 used: pg_type_typname_nsp_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_opfamily_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_statistic_ext_oid_index
+    index info: 2048 total in 2 blocks; 752 free (2 chunks); 1296 used: pg_statistic_ext_data_stxoid_inh_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_class_oid_index
+    index info: 3072 total in 2 blocks; 1112 free (2 chunks); 1960 used: pg_proc_proname_args_nsp_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_partitioned_table_partrelid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_range_rngmultitypid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_transform_type_lang_index
+    index info: 2048 total in 2 blocks; 568 free (3 chunks); 1480 used: pg_attribute_relid_attnum_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_proc_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_language_oid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_namespace_oid_index
+    index info: 3072 total in 2 blocks; 832 free (1 chunks); 2240 used: pg_amproc_fam_proc_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_foreign_server_name_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_attribute_relid_attnam_index
+    index info: 2048 total in 2 blocks; 752 free (2 chunks); 1296 used: pg_publication_namespace_pnnspid_pnpubid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_conversion_oid_index
+    index info: 2048 total in 2 blocks; 752 free (2 chunks); 1296 used: pg_user_mapping_user_server_index
+    index info: 2048 total in 2 blocks; 752 free (2 chunks); 1296 used: pg_subscription_rel_srrelid_srsubid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_sequence_seqrelid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_conversion_name_nsp_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_authid_oid_index
+    index info: 3072 total in 2 blocks; 1224 free (3 chunks); 1848 used: pg_auth_members_member_role_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_subscription_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_parameter_acl_oid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_tablespace_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_parameter_acl_parname_index
+    index info: 3072 total in 2 blocks; 1256 free (2 chunks); 1816 used: pg_shseclabel_object_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_replication_origin_roname_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_database_datname_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_subscription_subname_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_replication_origin_roiident_index
+    index info: 3072 total in 2 blocks; 1224 free (3 chunks); 1848 used: pg_auth_members_role_member_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_database_oid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_authid_rolname_index
+  WAL record construction: 50200 total in 2 blocks; 6400 free (0 chunks); 43800 used
+  PrivateRefCount: 8192 total in 1 blocks; 2672 free (0 chunks); 5520 used
+  MdSmgr: 8192 total in 1 blocks; 7808 free (0 chunks); 384 used
+  LOCALLOCK hash: 8192 total in 1 blocks; 616 free (0 chunks); 7576 used
+  GUCMemoryContext: 24576 total in 2 blocks; 11760 free (7 chunks); 12816 used
+    GUC hash table: 32768 total in 3 blocks; 12728 free (6 chunks); 20040 used
+  Timezones: 104112 total in 2 blocks; 2672 free (0 chunks); 101440 used
+  ErrorContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+Grand total: 1411568 bytes in 228 blocks; 259192 free (188 chunks); 1152376 used
+
+2026-09-21 17:28:00.077 IST [5700] ERROR:  out of memory at character 199
+2026-09-21 17:28:00.077 IST [5700] DETAIL:  Failed on request of size 1152 in memory context "CacheMemoryContext".
+2026-09-21 17:28:00.077 IST [5700] STATEMENT:  SELECT c.id, c.title, c.content, c.created_at, u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	      SELECT confession_id, jsonb_object_agg(emoji, cnt) AS counts
+	      FROM (SELECT confession_id, emoji, COUNT(*)::int AS cnt FROM reactions GROUP BY confession_id, emoji) s
+	      GROUP BY confession_id
+	    ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $1 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.status = 'APPROVED' 
+	     ORDER BY c.created_at DESC
+	     LIMIT $2
+
+2026-09-21 17:28:00.252 IST [55992] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 17:28:00.252 IST [5700] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 17:29:51.527 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 17:29:53.508 IST [21772] LOG:  checkpoint complete: wrote 19 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.970 s, sync=0.004 s, total=1.982 s; sync files=18, longest=0.002 s, average=0.001 s; distance=59 kB, estimate=3010 kB; lsn=0/1A88648, redo lsn=0/1A885B8
+
+2026-09-21 17:54:51.550 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 17:54:52.769 IST [21772] LOG:  checkpoint complete: wrote 12 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.207 s, sync=0.006 s, total=1.220 s; sync files=11, longest=0.003 s, average=0.001 s; distance=23 kB, estimate=2711 kB; lsn=0/1A8E298, redo lsn=0/1A8E240
+
+2026-09-21 21:25:02.353 IST [66244] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 21:25:02.356 IST [66236] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 21:25:02.357 IST [66340] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 21:29:52.070 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 21:29:53.944 IST [21772] LOG:  checkpoint complete: wrote 18 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.852 s, sync=0.004 s, total=1.875 s; sync files=13, longest=0.002 s, average=0.001 s; distance=45 kB, estimate=2445 kB; lsn=0/1A998E0, redo lsn=0/1A99888
+
+2026-09-21 21:38:47.371 IST [59600] ERROR:  duplicate key value violates unique constraint "users_username_lower_idx"
+2026-09-21 21:38:47.371 IST [59600] DETAIL:  Key (lower(username))=(user_mubfwnwswf) already exists.
+2026-09-21 21:38:47.371 IST [59600] STATEMENT:  INSERT INTO users (username, password_hash, nickname, avatar_emoji)
+	       VALUES ($1, $2, $3, $4)
+	       RETURNING id, nickname, avatar_emoji, role
+
+2026-09-21 21:38:51.049 IST [57680] ERROR:  column r.counts does not exist at character 152
+2026-09-21 21:38:51.049 IST [57680] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 21:38:51.049 IST [57680] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 21:38:51.081 IST [66952] ERROR:  column r.counts does not exist at character 152
+2026-09-21 21:38:51.081 IST [66952] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 21:38:51.081 IST [66952] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 21:39:10.221 IST [54560] ERROR:  duplicate key value violates unique constraint "users_username_lower_idx"
+2026-09-21 21:39:10.221 IST [54560] DETAIL:  Key (lower(username))=(user_mubfx5fgla) already exists.
+2026-09-21 21:39:10.221 IST [54560] STATEMENT:  INSERT INTO users (username, password_hash, nickname, avatar_emoji)
+	       VALUES ($1, $2, $3, $4)
+	       RETURNING id, nickname, avatar_emoji, role
+
+2026-09-21 21:39:12.278 IST [66832] ERROR:  column r.counts does not exist at character 152
+2026-09-21 21:39:12.278 IST [66832] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 21:39:12.278 IST [66832] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 21:39:12.306 IST [58480] ERROR:  column r.counts does not exist at character 152
+2026-09-21 21:39:12.306 IST [58480] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 21:39:12.306 IST [58480] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 21:39:25.057 IST [65600] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 21:39:25.059 IST [56016] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 21:39:52.962 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 21:39:54.507 IST [21772] LOG:  checkpoint complete: wrote 15 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.534 s, sync=0.004 s, total=1.545 s; sync files=12, longest=0.002 s, average=0.001 s; distance=46 kB, estimate=2205 kB; lsn=0/1AA5338, redo lsn=0/1AA52E0
+
+2026-09-21 21:49:35.039 IST [59032] ERROR:  column r.counts does not exist at character 152
+2026-09-21 21:49:35.039 IST [59032] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 21:49:35.039 IST [59032] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, '[]'::jsonb AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 21:54:26.282 IST [58028] ERROR:  column r.counts does not exist at character 152
+2026-09-21 21:54:26.282 IST [58028] HINT:  Perhaps you meant to reference the column "r.cnt".
+2026-09-21 21:54:26.282 IST [58028] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, '[]'::jsonb AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	       FROM reactions WHERE confession_id = $1
+	       GROUP BY confession_id, emoji
+	     ) r ON r.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 21:59:53.100 IST [63904] ERROR:  bind message supplies 2 parameters, but prepared statement "" requires 1
+2026-09-21 21:59:53.100 IST [63904] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, '[]'::jsonb AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, jsonb_object_agg(emoji, cnt) AS counts
+	       FROM (
+	         SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	         FROM reactions WHERE confession_id = $1
+	         GROUP BY confession_id, emoji
+	       ) s
+	       GROUP BY confession_id
+	     ) r ON r.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 22:03:33.866 IST [55424] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-09-21 22:03:33.866 IST [39544] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 22:04:52.547 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 22:04:53.535 IST [21772] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.978 s, sync=0.004 s, total=0.989 s; sync files=10, longest=0.002 s, average=0.001 s; distance=32 kB, estimate=1988 kB; lsn=0/1AAD540, redo lsn=0/1AAD4E8
+
+2026-09-21 22:06:26.690 IST [56952] ERROR:  duplicate key value violates unique constraint "users_username_lower_idx"
+2026-09-21 22:06:26.690 IST [56952] DETAIL:  Key (lower(username))=(user_mubgw8bdd2) already exists.
+2026-09-21 22:06:26.690 IST [56952] STATEMENT:  INSERT INTO users (username, password_hash, nickname, avatar_emoji)
+	       VALUES ($1, $2, $3, $4)
+	       RETURNING id, nickname, avatar_emoji, role
+
+2026-09-21 22:06:43.313 IST [67552] ERROR:  duplicate key value violates unique constraint "users_username_lower_idx"
+2026-09-21 22:06:43.313 IST [67552] DETAIL:  Key (lower(username))=(user_mubgwl2djo) already exists.
+2026-09-21 22:06:43.313 IST [67552] STATEMENT:  INSERT INTO users (username, password_hash, nickname, avatar_emoji)
+	       VALUES ($1, $2, $3, $4)
+	       RETURNING id, nickname, avatar_emoji, role
+
+2026-09-21 22:06:51.691 IST [55524] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 22:06:51.691 IST [55808] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 22:09:52.543 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 22:09:54.962 IST [21772] LOG:  checkpoint complete: wrote 23 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.408 s, sync=0.005 s, total=2.420 s; sync files=19, longest=0.002 s, average=0.001 s; distance=92 kB, estimate=1798 kB; lsn=0/1AC47A0, redo lsn=0/1AC4748
+
+2026-09-21 22:14:52.972 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 22:14:53.852 IST [21772] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.869 s, sync=0.004 s, total=0.881 s; sync files=9, longest=0.002 s, average=0.001 s; distance=28 kB, estimate=1621 kB; lsn=0/1ACB840, redo lsn=0/1ACB7E8
+
+2026-09-21 22:19:52.853 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 22:19:55.138 IST [21772] LOG:  checkpoint complete: wrote 22 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.274 s, sync=0.004 s, total=2.285 s; sync files=14, longest=0.002 s, average=0.001 s; distance=80 kB, estimate=1467 kB; lsn=0/1ADFA48, redo lsn=0/1ADF9F0
+
+2026-09-21 22:44:02.994 IST [66152] ERROR:  duplicate key value violates unique constraint "users_username_lower_idx"
+2026-09-21 22:44:02.994 IST [66152] DETAIL:  Key (lower(username))=(user_mubi8kdddp) already exists.
+2026-09-21 22:44:02.994 IST [66152] STATEMENT:  INSERT INTO users (username, password_hash, nickname, avatar_emoji)
+	       VALUES ($1, $2, $3, $4)
+	       RETURNING id, nickname, avatar_emoji, role
+
+2026-09-21 22:44:20.565 IST [61452] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 22:44:20.565 IST [65668] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 22:44:52.190 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 22:44:53.741 IST [21772] LOG:  checkpoint complete: wrote 15 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.539 s, sync=0.004 s, total=1.552 s; sync files=12, longest=0.002 s, average=0.001 s; distance=39 kB, estimate=1324 kB; lsn=0/1AE96E0, redo lsn=0/1AE9688
+
+2026-09-21 22:48:05.618 IST [54036] ERROR:  duplicate key value violates unique constraint "users_username_lower_idx"
+2026-09-21 22:48:05.618 IST [54036] DETAIL:  Key (lower(username))=(user_mubidrmhp8) already exists.
+2026-09-21 22:48:05.618 IST [54036] STATEMENT:  INSERT INTO users (username, password_hash, nickname, avatar_emoji)
+	       VALUES ($1, $2, $3, $4)
+	       RETURNING id, nickname, avatar_emoji, role
+
+TopMemoryContext: 97792 total in 5 blocks; 10336 free (5 chunks); 87456 used
+  TopTransactionContext: 8192 total in 1 blocks; 7776 free (1 chunks); 416 used
+  RI compare cache: 8192 total in 1 blocks; 2672 free (0 chunks); 5520 used
+  RI query cache: 8192 total in 1 blocks; 1640 free (0 chunks); 6552 used
+  RI constraint cache: 40640 total in 2 blocks; 2672 free (0 chunks); 37968 used
+  Type information cache: 24368 total in 2 blocks; 2672 free (0 chunks); 21696 used
+  TableSpace cache: 8192 total in 1 blocks; 2152 free (0 chunks); 6040 used
+  Operator lookup cache: 24576 total in 2 blocks; 10816 free (4 chunks); 13760 used
+
+  search_path processing cache: 8192 total in 1 blocks; 5656 free (7 chunks); 2536 used
+  RowDescriptionContext: 8192 total in 1 blocks; 3848 free (2 chunks); 4344 used
+  MessageContext: 8192 total in 1 blocks; 5752 free (0 chunks); 2440 used
+  Operator class cache: 8192 total in 1 blocks; 616 free (0 chunks); 7576 used
+  smgr relation table: 32768 total in 3 blocks; 12800 free (9 chunks); 19968 used
+  PgStat Shared Ref Hash: 7216 total in 2 blocks; 712 free (0 chunks); 6504 used
+  PgStat Shared Ref: 8192 total in 4 blocks; 2648 free (5 chunks); 5544 used
+  PgStat Pending: 24576 total in 6 blocks; 19120 free (53 chunks); 5456 used
+  TransactionAbortContext: 32768 total in 1 blocks; 32528 free (0 chunks); 240 used
+  Portal hash: 8192 total in 1 blocks; 616 free (0 chunks); 7576 used
+  TopPortalContext: 8192 total in 1 blocks; 7688 free (0 chunks); 504 used
+    PortalContext: 3072 total in 2 blocks; 1400 free (2 chunks); 1672 used: <unnamed>
+      ExecutorState: 120336 total in 6 blocks; 1744 free (1 chunks); 118592 used
+        TupleSort main: 32816 total in 2 blocks; 920 free (0 chunks); 31896 used
+          TupleSort sort: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+            Caller tuples: 8080 total in 1 blocks; 8008 free; 72 used
+        HashTableContext: 8192 total in 1 blocks; 7776 free (0 chunks); 416 used
+          HashSpillContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+          HashBatchContext: 57424 total in 3 blocks; 16096 free (7 chunks); 41328 used
+        printtup: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 6848 free (0 chunks); 1344 used
+        ExprContext: 8192 total in 1 blocks; 7248 free (1 chunks); 944 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+        ExprContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+  Relcache by OID: 16384 total in 2 blocks; 3608 free (3 chunks); 12776 used
+  CacheMemoryContext: 1048576 total in 8 blocks; 462416 free (1 chunks); 586160 used
+    CachedPlan: 33792 total in 6 blocks; 2480 free (1 chunks); 31312 used: SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,           ...
+    CachedPlanSource: 17600 total in 6 blocks; 1616 free (0 chunks); 15984 used: SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,           ...
+      unnamed prepared statement: 65536 total in 4 blocks; 11952 free (1 chunks); 53584 used
+    CachedPlanSource: 4096 total in 3 blocks; 1824 free (2 chunks); 2272 used: SELECT 1 FROM ONLY "public"."users" x WHERE "id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE OF x
+      CachedPlanQuery: 4096 total in 3 blocks; 1176 free (0 chunks); 2920 used
+    SPI Plan: 1024 total in 1 blocks; 624 free (0 chunks); 400 used
+    CachedPlanSource: 4096 total in 3 blocks; 1816 free (1 chunks); 2280 used: SELECT 1 FROM ONLY "public"."confessions" x WHERE "id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE OF x
+      CachedPlanQuery: 4096 total in 3 blocks; 1096 free (0 chunks); 3000 used
+    SPI Plan: 1024 total in 1 blocks; 624 free (0 chunks); 400 used
+    CachedPlanSource: 4096 total in 3 blocks; 1824 free (2 chunks); 2272 used: SELECT 1 FROM ONLY "public"."users" x WHERE "id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE OF x
+      CachedPlanQuery: 4096 total in 3 blocks; 1176 free (0 chunks); 2920 used
+    SPI Plan: 1024 total in 1 blocks; 624 free (0 chunks); 400 used
+    index info: 2048 total in 2 blocks; 712 free (2 chunks); 1336 used: notifications_user_idx
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: notifications_pkey
+    index info: 3072 total in 2 blocks; 984 free (1 chunks); 2088 used: reactions_pkey
+    index info: 2048 total in 2 blocks; 712 free (2 chunks); 1336 used: confessions_author_idx
+    index info: 2048 total in 2 blocks; 640 free (2 chunks); 1408 used: confessions_status_created_idx
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: confessions_pkey
+    index info: 2048 total in 2 blocks; 640 free (2 chunks); 1408 used: pg_toast_2619_index
+    index info: 2048 total in 2 blocks; 648 free (1 chunks); 1400 used: users_username_lower_idx
+    index info: 2048 total in 2 blocks; 952 free (1 chunks); 1096 used: users_pkey
+    index info: 1024 total in 1 blocks; 24 free (0 chunks); 1000 used: pg_statistic_ext_relid_index
+    index info: 2048 total in 2 blocks; 952 free (1 chunks); 1096 used: sessions_pkey
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_index_indrelid_index
+    index info: 3072 total in 2 blocks; 1080 free (1 chunks); 1992 used: pg_constraint_conrelid_contypid_conname_index
+    index info: 2048 total in 2 blocks; 640 free (2 chunks); 1408 used: pg_attrdef_adrelid_adnum_index
+    index info: 2048 total in 2 blocks; 608 free (1 chunks); 1440 used: pg_db_role_setting_databaseid_rol_index
+    index info: 3072 total in 2 blocks; 1112 free (2 chunks); 1960 used: pg_opclass_am_name_nsp_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_foreign_data_wrapper_name_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_enum_oid_index
+    index info: 2048 total in 2 blocks; 568 free (3 chunks); 1480 used: pg_class_relname_nsp_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_foreign_server_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_publication_pubname_index
+    index info: 3072 total in 2 blocks; 936 free (2 chunks); 2136 used: pg_statistic_relid_att_inh_index
+    index info: 2048 total in 2 blocks; 568 free (3 chunks); 1480 used: pg_cast_source_target_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_language_name_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_transform_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_collation_oid_index
+    index info: 3072 total in 2 blocks; 832 free (1 chunks); 2240 used: pg_amop_fam_strat_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_index_indexrelid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_ts_template_tmplname_index
+    index info: 3072 total in 2 blocks; 1256 free (2 chunks); 1816 used: pg_ts_config_map_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_opclass_oid_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_foreign_data_wrapper_oid_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_publication_namespace_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_event_trigger_evtname_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_statistic_ext_name_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_publication_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_ts_dict_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_event_trigger_oid_index
+    index info: 3072 total in 2 blocks; 1192 free (2 chunks); 1880 used: pg_conversion_default_index
+    index info: 3072 total in 2 blocks; 904 free (1 chunks); 2168 used: pg_operator_oprname_l_r_n_index
+    index info: 2048 total in 2 blocks; 640 free (3 chunks); 1408 used: pg_trigger_tgrelid_tgname_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_extension_oid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_enum_typid_label_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_ts_config_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_user_mapping_oid_index
+    index info: 3072 total in 2 blocks; 1256 free (2 chunks); 1816 used: pg_opfamily_am_name_nsp_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_foreign_table_relid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_type_oid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_aggregate_fnoid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_constraint_oid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_rewrite_rel_rulename_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_ts_parser_prsname_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_ts_config_cfgname_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_ts_parser_oid_index
+    index info: 2048 total in 2 blocks; 680 free (2 chunks); 1368 used: pg_publication_rel_prrelid_prpubid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_operator_oid_index
+    
+index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_namespace_nspname_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_ts_template_oid_index
+    index info: 3072 total in 2 blocks; 968 free (2 chunks); 2104 used: pg_amop_opr_fam_index
+    index info: 3072 total in 2 blocks; 1224 free (3 chunks); 1848 used: pg_default_acl_role_nsp_obj_index
+    index info: 3072 total in 2 blocks; 1256 free (2 chunks); 1816 used: pg_collation_name_enc_nsp_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_publication_rel_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_range_rngtypid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_ts_dict_dictname_index
+    index info: 2048 total in 2 blocks; 568 free (3 chunks); 1480 used: pg_type_typname_nsp_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_opfamily_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_statistic_ext_oid_index
+    index info: 2048 total in 2 blocks; 752 free (2 chunks); 1296 used: pg_statistic_ext_data_stxoid_inh_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_class_oid_index
+    index info: 3072 total in 2 blocks; 1112 free (2 chunks); 1960 used: pg_proc_proname_args_nsp_index
+    index info: 1024 total in 1 blocks; 64 free (0 chunks); 960 used: pg_partitioned_table_partrelid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_range_rngmultitypid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_transform_type_lang_index
+    index info: 2048 total in 2 blocks; 568 free (3 chunks); 1480 used: pg_attribute_relid_attnum_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_proc_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_language_oid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_namespace_oid_index
+    index info: 3072 total in 2 blocks; 832 free (1 chunks); 2240 used: pg_amproc_fam_proc_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_foreign_server_name_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_attribute_relid_attnam_index
+    index info: 2048 total in 2 blocks; 680 free (2 chunks); 1368 used: pg_publication_namespace_pnnspid_pnpubid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_conversion_oid_index
+    index info: 2048 total in 2 blocks; 752 free (2 chunks); 1296 used: pg_user_mapping_user_server_index
+    index info: 2048 total in 2 blocks; 752 free (2 chunks); 1296 used: pg_subscription_rel_srrelid_srsubid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_sequence_seqrelid_index
+    index info: 2048 total in 2 blocks; 784 free (3 chunks); 1264 used: pg_conversion_name_nsp_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_authid_oid_index
+    index info: 3072 total in 2 blocks; 1224 free (3 chunks); 1848 used: pg_auth_members_member_role_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_subscription_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_parameter_acl_oid_index
+    index info: 2048 total in 2 blocks; 936 free (1 chunks); 1112 used: pg_tablespace_oid_index
+    index info: 1024 total in 1 blocks; 96 free (0 chunks); 928 used: pg_parameter_acl_parname_index
+    8 more child contexts containing 16384 total in 14 blocks; 6200 free (11 chunks); 10184 used
+  WAL record construction: 50200 total in 2 blocks; 6400 free (0 chunks); 43800 used
+  PrivateRefCount: 8192 total in 1 blocks; 2672 free (0 chunks); 5520 used
+  MdSmgr: 8192 total in 1 blocks; 7664 free (0 chunks); 528 used
+  LOCALLOCK hash: 8192 total in 1 blocks; 616 free (0 chunks); 7576 used
+  GUCMemoryContext: 24576 total in 2 blocks; 11760 free (7 chunks); 12816 used
+    GUC hash table: 32768 total in 3 blocks; 12728 free (6 chunks); 20040 used
+  Timezones: 104112 total in 2 blocks; 2672 free (0 chunks); 101440 used
+  ErrorContext: 8192 total in 1 blocks; 7952 free (0 chunks); 240 used
+Grand total: 2407880 bytes in 296 blocks; 930624 free (242 chunks); 1477256 used
+
+2026-09-21 22:48:22.678 IST [43804] ERROR:  out of memory
+2026-09-21 22:48:22.678 IST [43804] DETAIL:  Failed on request of size 27352 in memory context "ExecutorState".
+2026-09-21 22:48:22.678 IST [43804] STATEMENT:  SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+	            u.nickname, u.avatar_emoji,
+	            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions
+	     FROM confessions c
+	     JOIN users u ON u.id = c.author_id
+	     LEFT JOIN (
+	       SELECT confession_id, jsonb_object_agg(emoji, cnt) AS counts
+	       FROM (
+	         SELECT confession_id, emoji, COUNT(*)::int AS cnt
+	         FROM reactions WHERE confession_id = $1
+	         GROUP BY confession_id, emoji
+	       ) s
+	       GROUP BY confession_id
+	     ) r ON r.confession_id = c.id
+	     LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id
+	     WHERE c.id = $1
+
+2026-09-21 22:48:23.563 IST [62828] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 22:49:52.752 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 22:49:54.522 IST [21772] LOG:  checkpoint complete: wrote 17 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.757 s, sync=0.004 s, total=1.771 s; sync files=13, longest=0.002 s, average=0.001 s; distance=44 kB, estimate=1196 kB; lsn=0/1AF49A8, redo lsn=0/1AF4950
+
+2026-09-21 23:00:26.199 IST [64152] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 23:00:26.200 IST [56792] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 23:00:26.200 IST [51616] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+
+2026-09-21 23:04:52.533 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 23:04:53.085 IST [21772] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.543 s, sync=0.004 s, total=0.552 s; sync files=6, longest=0.002 s, average=0.001 s; distance=23 kB, estimate=1079 kB; lsn=0/1AFA930, redo lsn=0/1AFA8D8
+
+2026-09-21 23:14:52.101 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-21 23:14:53.635 IST [21772] LOG:  checkpoint complete: wrote 15 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.523 s, sync=0.005 s, total=1.534 s; sync files=13, longest=0.002 s, average=0.001 s; distance=29 kB, estimate=974 kB; lsn=0/1B02040, redo lsn=0/1B01FD0
+
+2026-09-22 05:09:53.171 IST [21772] LOG:  checkpoint starting: time
+
+2026-09-22 05:09:53.954 IST [21772] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.765 s, sync=0.004 s, total=0.784 s; sync files=6, longest=0.002 s, average=0.001 s; distance=33 kB, estimate=880 kB; lsn=0/1B0A780, redo lsn=0/1B0A728
+

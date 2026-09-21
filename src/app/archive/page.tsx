@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   ConfessionCard,
@@ -36,6 +37,7 @@ export default function ArchivePage() {
   const [cursor, setCursor] = useState<string | null>(null)
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
   const [loadingMore, setLoadingMore] = useState(false)
+  const router = useRouter()
 
   const load = useCallback(
     async (nextCursor: string | null, initial: boolean) => {
@@ -46,6 +48,10 @@ export default function ArchivePage() {
           ? `?cursor=${encodeURIComponent(nextCursor)}`
           : ""
         const res = await fetch(`/api/confessions${qs}`)
+        if (res.status === 401) {
+          router.push("/login")
+          return
+        }
         if (!res.ok) throw new Error("Request failed")
         const data = (await res.json()) as {
           confessions: ConfessionItem[]

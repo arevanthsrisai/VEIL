@@ -6,7 +6,17 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-const EMOJIS = ["🔥", "😂", "❤️", "😮", "😢", "👍"] as const
+const EMOJIS = ["🔥", "😂", "❤️", "😮", "😢", "👍", "💀"] as const
+
+const LABELS: Record<(typeof EMOJIS)[number], string> = {
+  "🔥": "Fire",
+  "😂": "Laugh",
+  "❤️": "Love",
+  "😮": "Wow",
+  "😢": "Cry",
+  "👍": "Thumbs up",
+  "💀": "Skull",
+}
 
 type ReactionButtonsProps = {
   confessionId: string
@@ -89,6 +99,7 @@ export function ReactionButtons({ confessionId, initialCounts, initialReacted }:
             variant="outline"
             size="sm"
             aria-pressed={active}
+            aria-label={`${LABELS[emoji]} reaction`}
             disabled={pending}
             onClick={() => toggle(emoji)}
             className={cn(

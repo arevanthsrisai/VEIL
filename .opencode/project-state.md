@@ -11,6 +11,17 @@ Phase 10 — Deploy (BLOCKED on Voroa DB approval). Phases 0-9 complete.
 - Cross-checked: every application query maps to a schema object; FK ordering valid; idempotent DDL; no secrets.
 - The corrupted original also contained an injected junk text fragment (treated as untrusted, ignored).
 
+## Wave: Neon migration + full E2E green (2026-09-22)
+- DB switched from local PostgreSQL to NEON Postgres per user decision (Voroa free DB capacity blocked — deployment via Voroa abandoned). Neon project `broad-tree-72190477` (VEIL, ap-southeast-1, PG 18.6).
+- Schema applied to Neon via Neon MCP transaction (13 statements, idempotent) — verified live: 7 tables, 12 indexes, 43 columns. db/schema.sql is the source of truth (NOT rewritten).
+- `DATABASE_URL` in `.env.local` (gitignored) = Neon POOLED connection string. Credentials never printed/committed. NOTE: credentials were shared in chat by the user — recommend rotating the Neon password later.
+- De-Voroa'd: db.ts error message now generic; AGENTS.md stack line updated to Neon. Voroa VEIL project + old proposal left in place (unused, no config committed).
+- Local dev tooling: scripts/dev-db.mjs (embedded PG 17, kept for offline dev), scripts/db-verify.mjs, scripts/seed-e2e.mjs, scripts/probe-report.mjs.
+- Playwright: channel "chrome" (system Chrome; CDN download blocked), workers 1 (this machine OOMs with parallel browsers), E2E_SKIP_RATE_LIMIT=1 env-gated bypass in webServer.
+- **E2E: 32/32 PASSED against Neon** (desktop + mobile). App bugs found and fixed by E2E: navbar stale after register/login (window.location.assign fix), archive missing 401 redirect (router was undefined — import added), detail API r.counts SQL bug (jsonb_object_agg level restored), reaction buttons had no accessible names (aria-labels added), 💀 skull reaction added.
+- Verified: tsc CLEAN, vitest 33/33, build CLEAN (30 routes).
+- Voroa deployment: NO LONGER the plan — replaced by Neon.
+
 ## Wave: Public sharing + comments removal + hardening (2026-09-21)
 - COMMENTS REMOVED per spec (user decision): comments table + FKs dropped from schema BEFORE first DB apply (DB not created yet — no destructive migration); comment UI (comments-section.tsx deleted, moderation comments tab, activity comments tab), comment APIs (2 route dirs deleted), comment stats/notifications types removed. createReport is confession-only now.
 - PUBLIC SHARING: ShareButton component (Web Share API + clipboard fallback with execCommand for non-secure contexts, subtle "Copied" state) on approved posts.
@@ -26,11 +37,11 @@ Phase 10 — Deploy (BLOCKED on Voroa DB approval). Phases 0-9 complete.
 
 ## Stack Decision
 - Next.js 16.3.5 (App Router, React 19, Turbopack) — one deployable
-- PostgreSQL on Voroa (NOT Neon) — proposal `yBnMsOJcTDO2GLEYXQLtbh4mLCVHFLPLkmaAf1Dgdpc` submitted (db `amrita_ap_confessions`, PG 17), STILL awaiting dashboard approval
+- **Neon Postgres** (project `broad-tree-72190477`, PG 18.6) — replaced Voroa (free capacity blocked); schema in db/schema.sql
 - Tailwind CSS v4 + shadcn/ui (base-nova preset, Base UI primitives)
 - Custom auth: bcryptjs + DB-backed httpOnly session cookies
-- Vitest (36 unit tests) + Playwright E2E (32 tests listed, need DATABASE_URL to run)
-- Hosting target: Voroa web service; Turnstile optional (env-gated)
+- Vitest (33 unit tests) + Playwright E2E (32 tests, all passing against Neon)
+- Hosting target: TBD (Neon DB ready; Voroa web service optional); Turnstile optional (env-gated)
 
 ## Completed Tasks
 - [x] Phase 0: git init + remote + state files + timeout-check tooling (`.opencode/timeout-check.mjs`)

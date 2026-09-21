@@ -1,4 +1,4 @@
-﻿-- VEIL - database schema (Voroa Postgres, PostgreSQL 17)
+-- VEIL - database schema (Voroa Postgres, PostgreSQL 17)
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), username TEXT NOT NULL, password_hash TEXT NOT NULL, nickname TEXT, avatar_emoji TEXT DEFAULT '🎭', role TEXT NOT NULL DEFAULT 'USER' CHECK (role IN ('USER','MODERATOR','ADMIN')), restricted_until TIMESTAMPTZ);

@@ -53,7 +53,7 @@ export default function RegisterPage() {
         setError(data?.error ?? "Registration failed. Try again.")
         return
       }
-      router.push("/")
+      window.location.assign("/")
       router.refresh()
     } catch {
       setError("Registration failed. Try again.")

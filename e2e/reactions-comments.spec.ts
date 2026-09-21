@@ -13,7 +13,7 @@ test.describe("reactions", () => {
     const id = data.confessions[0].id;
 
     await page.goto(`/post/${id}`);
-    const fire = page.getByRole("button", { name: "🔥" }).first();
+    const fire = page.getByRole("button", { name: "Fire reaction" });
     await fire.click();
     await expect(fire).toHaveAttribute("aria-pressed", "true", { timeout: 10_000 });
     await fire.click();
