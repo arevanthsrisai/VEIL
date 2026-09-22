@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  SESSION_COOKIE,
   DEFAULT_AVATAR,
   createSession,
   hashPassword,
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
     const user = toPublicUser(rows[0]);
     const { token, expiresAt } = await createSession(user.id);
     const res = NextResponse.json({ user }, { status: 201 });
-    res.cookies.set("session", token, sessionCookieOptions(expiresAt));
+    res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
     return res;
   } catch (err: unknown) {
     if (typeof err === "object" && err !== null && "code" in err && err.code === "23505")

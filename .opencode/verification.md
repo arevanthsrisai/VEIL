@@ -2,6 +2,13 @@
 
 Status legend: [ ] pending  [x] pass  [f] fail  [~] partial
 
+## Security Hardening (2026-09-22)
+- [x] Turnstile fail-closed/clear: both keys → verify; neither → disabled; partial → fail closed + clear log (independent review: PASS)
+- [x] Siteverify fetch: AbortSignal.timeout(5000) + try/catch fail-closed (no hang path, no exception leak)
+- [x] Session hygiene: expired-session purge on register/login (bounded growth, active sessions unaffected)
+- [x] tsc CLEAN, vitest 33/33, build CLEAN (31 routes), auth E2E 10/10 against Neon
+- [x] No regressions (cookie options, rate limits, auth flow unchanged)
+
 ## Deployment Readiness (2026-09-22)
 - [x] Production build: CLEAN (31 routes, next build → next start)
 - [x] Env vars: .env.example complete (DATABASE_URL, TURNSTILE pair); no secrets tracked

@@ -50,7 +50,7 @@ node scripts/bootstrap-admin.mjs <username> <password> [nickname]  # admin boots
 3. Role checks (`USER`/`MODERATOR`/`ADMIN`) are server-side only.
 4. Admin bootstrap ONLY via `scripts/bootstrap-admin.mjs` — no `/register?role=admin`.
 5. No Redis/AI/media uploads in V1. In-memory rate limiters carry `ponytail:` ceiling notes.
-6. Turnstile active only when `TURNSTILE_SECRET_KEY` is set (documented ceiling).
+6. Turnstile is either fully configured (both `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY`) or fully disabled; partial config fails closed (documented ceiling).
 7. Never log or hardcode secrets; parameterized queries only.
 
 ## Git

@@ -96,6 +96,8 @@ export async function createSession(userId: string): Promise<{ token: string; ex
     userId,
     expiresAt.toISOString(),
   ]);
+  // ponytail: opportunistic purge on login/register keeps sessions bounded; expires_at index if table grows
+  await query("DELETE FROM sessions WHERE expires_at < now()");
   return { token, expiresAt };
 }
 
