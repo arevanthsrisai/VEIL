@@ -1,7 +1,14 @@
 # Project State — VEIL
 
 ## Current Phase
-Deployment READY (checkpoint: readiness wave complete). Not deployed — awaiting user go-ahead.
+DEPLOYED — LIVE on Render (https://veil-d2te.onrender.com), commit 704c06a. Voroa service creation did NOT materialize despite dashboard acceptance (0 services visible via API minutes later) — user to re-check Voroa dashboard.
+
+## Deployment Status (2026-09-22)
+- **LIVE**: Render web service `veil` (srv-daovjtlg1s2s738rt1m0), free plan, Oregon, autoDeploy ON (commits to main auto-deploy). Deploy history: d1c6260 build_failed (Tailwind devDeps skipped by NODE_ENV=production), 365ba08 build_failed (@types/node), 704c06a LIVE (platform-optional fix).
+- Deploy fixes made: Tailwind build packages moved to dependencies; embedded-postgres → optionalDependencies (EBADPLATFORM on Linux); NODE_ENV=production env var REMOVED from service (redundant — next CLI sets production mode itself; was breaking devDep installs). Service env: DATABASE_URL (Neon pooled) + HOSTNAME=0.0.0.0. Turnstile: neither key set = disabled. E2E_SKIP_RATE_LIMIT never set.
+- Production smoke (all PASS): /api/health 200 {ok,database:ok} — Neon connectivity ✓; feed(anon) 401; register 201; create 202; detail(own pending) 200; bad-uuid 404. Browser: anonymous / → /login redirect ✓, VEIL branding ✓, console = only 2 expected 401 probes.
+- **Voroa**: project VEIL + Production env exist; create_service proposal pfYbA_-huAiJLTpfV6eiPl77H5zOE5DZBypsnVboYI8 accepted per user on dashboard, but NO service visible via API afterwards — blocker reported; user to verify in dashboard. If Voroa service materializes: set DATABASE_URL via Voroa env vars, verify health/smoke, then decide Render vs Voroa as primary.
+
 
 ## Deployment Readiness (2026-09-22)
 - Architecture: Next.js 16 (next build → next start, Node >=20) + Neon Postgres (pooled URL) + Cloudflare (DNS/Turnstile/edge) — simplest viable path.
