@@ -8,7 +8,7 @@ export function consume(
   now: number = Date.now(),
 ): boolean {
   // ponytail: E2E-only bypass, env-gated; never set E2E_SKIP_RATE_LIMIT outside test runs
-  if (process.env.E2E_SKIP_RATE_LIMIT === "1") return true;
+  if (process.env.NODE_ENV !== "production" && process.env.E2E_SKIP_RATE_LIMIT === "1") return true;
   const times = (buckets.get(key) ?? []).filter((t) => t > now - windowMs);
   if (times.length >= limit) {
     buckets.set(key, times);
@@ -24,5 +24,8 @@ export function resetRateLimits(): void {
 }
 
 export function clientIp(req: Request): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  // rightmost XFF entry: correct under both append- and overwrite-proxy semantics
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",").pop()!.trim() || "local";
+  return "local";
 }

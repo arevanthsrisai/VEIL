@@ -2,6 +2,21 @@
 
 Status legend: [ ] pending  [x] pass  [f] fail  [~] partial
 
+## Deployment Readiness (2026-09-22)
+- [x] Production build: CLEAN (31 routes, next build → next start)
+- [x] Env vars: .env.example complete (DATABASE_URL, TURNSTILE pair); no secrets tracked
+- [x] DATABASE_URL handling: lazy pool, tuned (max 10, idle 30s, connect-timeout 10s), no leaks
+- [x] Turnstile: env-gated, fail-closed when secret set; ops note — set both keys or neither
+- [x] Secure cookies: secure in production, httpOnly, SameSite=Lax, 30d expiry
+- [x] Production error handling: generic 500s, no DB error leakage (all 17 routes verified)
+- [x] Security headers: nosniff, DENY, referrer-policy, HSTS (no preload — correct pre-domain)
+- [x] Health: GET /api/health (200 ok / 503 degraded) — host health check target
+- [x] Cold start: safe (lazy DB, no DB needed at build; runtime 500s not boot crashes)
+- [x] Node runtime: engines >=20; no Windows-only prod deps
+- [x] Independent reviews: devops-engineer READY WITH FIXES (applied), code-reviewer PASS (XFF fixed)
+- [~] Actual deployment: NOT DONE (awaiting user go-ahead)
+- Note: security-auditor agent unavailable (model EOL) — code-reviewer used instead
+
 ## Neon Migration + E2E (2026-09-22)
 - [x] Schema applied to Neon (7 tables, 12 indexes, 43 columns) — verified via live metadata queries
 - [x] App connects to Neon (pooled URL, sslmode=require)

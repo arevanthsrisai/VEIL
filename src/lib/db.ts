@@ -17,7 +17,12 @@ function createPool(): PoolLike {
     console.error(MISSING_DB_URL);
     throw new Error(MISSING_DB_URL);
   }
-  return new Pool({ connectionString: process.env.DATABASE_URL }) as PoolLike;
+  return new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  }) as PoolLike;
 }
 
 let inner: PoolLike | null = null;

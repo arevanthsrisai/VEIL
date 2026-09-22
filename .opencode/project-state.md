@@ -1,7 +1,16 @@
 # Project State — VEIL
 
 ## Current Phase
-Phase 10 — Deploy (BLOCKED on Voroa DB approval). Phases 0-9 complete.
+Deployment READY (checkpoint: readiness wave complete). Not deployed — awaiting user go-ahead.
+
+## Deployment Readiness (2026-09-22)
+- Architecture: Next.js 16 (next build → next start, Node >=20) + Neon Postgres (pooled URL) + Cloudflare (DNS/Turnstile/edge) — simplest viable path.
+- Fixes applied: HSTS header, turbopack.root: __dirname (kills home-dir lockfile warning), pg Pool tuned (max 10, idle 30s, connect-timeout 10s), /api/health route (200 ok / 503 degraded, DB ping), .env.example (placeholders only) + !.env.example gitignore exception, engines node>=20, XFF rightmost-entry fix (clientIp), production guard on E2E_SKIP_RATE_LIMIT bypass.
+- Independent reviews (parallel): devops-engineer — READY WITH FIXES (all applied or noted); code-reviewer (security) — PASS, 1 MEDIUM (XFF, fixed) + LOWs noted (Turnstile partial-config footgun: set both keys or neither; sessions grow unbounded — hygiene; no siteverify timeout — minor).
+- Host must configure: DATABASE_URL (Neon pooled, sslmode=require), TURNSTILE_SECRET_KEY + NEXT_PUBLIC_TURNSTILE_SITE_KEY as a pair, NODE_ENV=production, PORT/HOSTNAME=0.0.0.0; health check → GET /api/health; apply db/schema.sql to Neon before first boot; NEVER set E2E_SKIP_RATE_LIMIT in prod.
+- Verified: tsc CLEAN, vitest 33/33, build CLEAN (31 routes incl /api/health). E2E 32/32 against Neon (previous wave).
+- Note: security-auditor agent is UNAVAILABLE (its model DeepSeek V4 Flash EOL 2026-09-21) — security reviews now via code-reviewer.
+
 
 ## Recovery History (2026-09-20/21)
 - Session suffered output-stream degradation; `db/schema.sql` was corrupted. No git commits existed, so no git restore was possible.
