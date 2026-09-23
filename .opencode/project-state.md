@@ -1,7 +1,25 @@
 # Project State — VEIL
 
 ## Current Phase
-DEPLOYED — LIVE on Render (https://veil-d2te.onrender.com), commit 704c06a. VOROA PROVISIONING FAILURE confirmed (see below) — needs Voroa support, not dashboard action.
+RECOVERY + COMPLETION DONE — deployed on Render (commit d439e63 pushed). All spec gaps closed; only cosmetic/Voroa items remain.
+
+## Completion Wave (2026-09-23) — gap analysis + implementation
+- Gap analysis vs master prompt: 13 gaps found, ALL CLOSED except noted ceilings.
+- Schema migration (additive, idempotent, applied to Neon + verified live — 12 tables now): bookmarks, polls, poll_votes, site_settings, audit_logs + 3 indexes.
+- NEW FEATURES (delegated to frontend-engineer agents, integrated + verified):
+  - Bookmarks: lib + 3 API routes + BookmarkButton + /activity Saved tab (60/h limit, APPROVED-only, ownership enforced)
+  - Discovery: search (q≤100, ILIKE, 60/min/IP) + random + today — lib + 3 API routes + 3 pages + navbar links
+  - Polls: admin create/close (admin-only), single-choice vote (PK dup prevention, race-safe vs close), /polls page, PollCard, PollManager in admin panel, audit on close
+  - Admin settings: maintenance_mode, registration_enabled, announcement (whitelist, audit with from/to) + /api/announcements public
+  - Moderation extension: hide/restore (race-safe, sentinel reason, audit_logs), account restrict/unrestrict (admin-only, never staff), login blocked for restricted users
+  - Audit logs: audit_logs table + ROLE_CHANGED/SETTING_CHANGED/POLL_CLOSED/POST_HIDDEN/POST_RESTORED/USER_RESTRICTED entries + admin audit-log viewer
+  - Transparency: /terms + /moderation-policy pages + footer links
+  - Theme: ThemeProvider + light/dark toggle in navbar (dark was hardcoded before)
+- SECURITY FIXES from independent review (code-reviewer): H1 restriction now invalidates sessions + enforced in validateSession (was login-only); M1 registration_enabled + maintenance_mode enforced server-side in register; L1 restrict made transactional (no TOCTOU); L4 role changes now audited with the real actor.
+- APP BUGS found+fixed: pg-in-client-bundle (settings-panel value import → local constant); anonymous detail 500 (getConfessionById 2-params-vs-1-placeholder when logged out).
+- Verification: tsc CLEAN · vitest 33/33 · build CLEAN (48 routes) · E2E 74 passed/8 skipped (skips = redundant fixme duplicates; those flows pass in admin-flows.spec: 10/10 incl. hide/restore/restrict/settings/poll via bootstrapped e2e_admin) · DOM-verified light/dark/mobile.
+- Screenshot visual inspection: NOT performed (this model has no image input) — 3 PNGs captured for USER review at .playwright-mcp/shot-login-{dark-desktop,light-desktop,light-mobile}.png.
+
 
 ## Voroa Provisioning Failure — DEFINITIVE DIAGNOSIS (2026-09-23)
 - 3 proposals, all APPROVED by the user on the dashboard, ZERO services ever materialized:
