@@ -347,10 +347,17 @@ export async function listAdminUsers(): Promise<AdminUserItem[]> {
 export async function setUserRole(
   userId: string,
   role: Role,
+  adminId: string,
 ): Promise<{ ok: true } | { missing: true }> {
   const { rows } = await query<{ id: string }>(`SELECT id FROM users WHERE id = $1`, [userId]);
   if (!rows[0]) return { missing: true };
-  await query(`UPDATE users SET role = $1 WHERE id = $2`, [role, userId]);
+  await transaction(async (tx) => {
+    await tx.query(`UPDATE users SET role = $1 WHERE id = $2`, [role, userId]);
+    await tx.query(
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id, meta) VALUES ($1, 'ROLE_CHANGED', 'user', $2, $3::jsonb)`,
+      [adminId, userId, JSON.stringify({ role })],
+    );
+  });
   return { ok: true };
 }
 
@@ -361,36 +368,49 @@ export async function restrictUser(
   adminId: string,
   days: number,
 ): Promise<{ ok: true } | { missing: true } | { forbidden: true }> {
-  const { rows } = await query<{ id: string; role: Role }>(
-    `SELECT id, role FROM users WHERE id = $1`,
+  const result = await transaction(async (tx) => {
+    // one-statement staff check + update: no stale-role TOCTOU
+    const { rows } = await tx.query(
+      `UPDATE users SET restricted_until = now() + make_interval(days => $1) WHERE id = $2 AND role = 'USER' RETURNING id`,
+      [days, userId],
+    );
+    const first = rows[0] as { id: string } | undefined;
+    if (!first) return null;
+    await tx.query(
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id, meta) VALUES ($1, 'USER_RESTRICTED', 'user', $2, $3::jsonb)`,
+      [adminId, userId, JSON.stringify({ days })],
+    );
+    // ponytail: invalidate live sessions so restriction takes effect immediately
+    await tx.query(`DELETE FROM sessions WHERE user_id = $1`, [userId]);
+    return { id: first.id };
+  });
+  if (result) return { ok: true };
+  const { rows: exists } = await query<{ role: string }>(
+    `SELECT role FROM users WHERE id = $1`,
     [userId],
   );
-  const target = rows[0];
-  if (!target) return { missing: true };
-  if (target.role !== "USER") return { forbidden: true };
-  await query(`UPDATE users SET restricted_until = now() + make_interval(days => $1) WHERE id = $2`, [
-    days,
-    userId,
-  ]);
-  await query(
-    `INSERT INTO audit_logs (actor_id, action, target_type, target_id, meta) VALUES ($1, 'USER_RESTRICTED', 'user', $2, $3::jsonb)`,
-    [adminId, userId, JSON.stringify({ days })],
-  );
-  return { ok: true };
+  if (!exists[0]) return { missing: true };
+  return { forbidden: true };
 }
 
 export async function unrestrictUser(
   userId: string,
   adminId: string,
 ): Promise<{ ok: true } | { missing: true }> {
-  const { rows } = await query<{ id: string }>(`SELECT id FROM users WHERE id = $1`, [userId]);
-  if (!rows[0]) return { missing: true };
-  await query(`UPDATE users SET restricted_until = NULL WHERE id = $1`, [userId]);
-  await query(
-    `INSERT INTO audit_logs (actor_id, action, target_type, target_id) VALUES ($1, 'USER_UNRESTRICTED', 'user', $2)`,
-    [adminId, userId],
-  );
-  return { ok: true };
+  const result = await transaction(async (tx) => {
+    const { rows } = await tx.query(
+      `UPDATE users SET restricted_until = NULL WHERE id = $1 RETURNING id`,
+      [userId],
+    );
+    const first = rows[0] as { id: string } | undefined;
+    if (!first) return null;
+    await tx.query(
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id) VALUES ($1, 'USER_UNRESTRICTED', 'user', $2)`,
+      [adminId, userId],
+    );
+    return { id: first.id };
+  });
+  return result ? { ok: true } : { missing: true };
 }
 
 export async function getAdminStats(): Promise<AdminStats> {

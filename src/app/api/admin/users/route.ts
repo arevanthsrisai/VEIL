@@ -54,7 +54,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "You cannot change your own role." }, { status: 409 });
 
   try {
-    const result = await setUserRole(body.userId, body.role);
+    const result = await setUserRole(body.userId, body.role, user.id);
     if ("missing" in result) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ ok: true });
   } catch (err) {

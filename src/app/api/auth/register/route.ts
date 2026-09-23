@@ -13,6 +13,7 @@ import {
   type PublicUser,
 } from "@/lib/auth";
 import { query } from "@/lib/db";
+import { getSettings } from "@/lib/settings";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { clientIp, consume } from "@/lib/rate-limit";
 
@@ -36,6 +37,17 @@ export async function POST(req: Request) {
   const avatar_emoji = body.avatarEmoji ?? body.avatar_emoji;
   if (!consume(`register:${clientIp(req)}`, 5))
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  try {
+    const settings = await getSettings();
+    if (settings.maintenance_mode)
+      return NextResponse.json({ error: "The site is in maintenance mode. Try again later." }, { status: 503 });
+    if (!settings.registration_enabled)
+      return NextResponse.json({ error: "Registration is currently disabled." }, { status: 403 });
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("DATABASE_URL"))
+      return NextResponse.json({ error: "Internal server error." }, { status: 500 });
+    return NextResponse.json({ error: "Registration failed." }, { status: 500 });
+  }
   if (!(await verifyTurnstile(body.turnstileToken)))
     return NextResponse.json({ error: "Bot verification failed." }, { status: 403 });
   const error =

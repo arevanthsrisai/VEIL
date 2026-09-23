@@ -17,14 +17,26 @@ test.afterAll(async () => {
 });
 
 async function seedPoll(question: string): Promise<string> {
+  const hash = "$2b$10$C6UzMDM.H6dfI/f/IKcEe.Q9r8T0p8Q7Y6Z5X4W3V2U1T0S9R8Q7P6O";
+  const { rows: u } = await pool.query<{ id: string }>(
+    `INSERT INTO users (username, password_hash, nickname, avatar_emoji)
+     VALUES ('poll_seed', $1, 'Poll Seed', '📊')
+     ON CONFLICT DO NOTHING
+     RETURNING id`,
+    [hash],
+  );
+  const creatorId =
+    u[0]?.id ??
+    (await pool.query<{ id: string }>(`SELECT id FROM users WHERE username = 'poll_seed'`)).rows[0].id;
   const { rows } = await pool.query<{ id: string }>(
-    `INSERT INTO polls (question, options) VALUES ($1, $2::jsonb) RETURNING id`,
+    `INSERT INTO polls (question, options, created_by) VALUES ($1, $2::jsonb, $3) RETURNING id`,
     [
       question,
       JSON.stringify([
         { id: OPTION_A, text: "The library" },
         { id: OPTION_B, text: "The coffee shop" },
       ]),
+      creatorId,
     ],
   );
   const row = rows[0];

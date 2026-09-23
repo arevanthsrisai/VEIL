@@ -188,9 +188,11 @@ export async function getConfessionById(
   id: string,
   userId: string | null,
 ): Promise<ConfessionRow | null> {
+  const params: unknown[] = [id];
   let mineJoin = "";
   let mineSelect = "'[]'::jsonb AS my_reactions";
   if (userId !== null) {
+    params.push(userId);
     mineJoin = `LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $2 GROUP BY confession_id) mr ON mr.confession_id = c.id`;
     mineSelect = "COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions";
   }
@@ -211,7 +213,7 @@ export async function getConfessionById(
      ) r ON r.confession_id = c.id
      ${mineJoin}
      WHERE c.id = $1`,
-    [id, userId],
+    params,
   );
   return rows[0] ?? null;
 }

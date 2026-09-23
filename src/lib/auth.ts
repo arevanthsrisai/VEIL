@@ -20,7 +20,7 @@ type UserRow = PublicUser & {
   password_hash: string;
 };
 
-type SessionRow = PublicUser & { expires_at: string };
+type SessionRow = PublicUser & { expires_at: string; restricted_until: string | null };
 
 const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
 export const DEFAULT_AVATAR = "🎭";
@@ -104,7 +104,7 @@ export async function createSession(userId: string): Promise<{ token: string; ex
 export async function validateSession(token: string): Promise<PublicUser | null> {
   if (!token) return null;
   const { rows } = await query<SessionRow>(
-    `SELECT u.id, u.nickname, u.avatar_emoji, u.role, s.expires_at
+    `SELECT u.id, u.nickname, u.avatar_emoji, u.role, u.restricted_until, s.expires_at
      FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = $1`,
     [hashToken(token)],
   );
@@ -112,6 +112,9 @@ export async function validateSession(token: string): Promise<PublicUser | null>
   if (!row) return null;
   if (new Date(row.expires_at).getTime() <= Date.now()) {
     await query("DELETE FROM sessions WHERE id = $1", [hashToken(token)]);
+    return null;
+  }
+  if (row.restricted_until && new Date(row.restricted_until).getTime() > Date.now()) {
     return null;
   }
   return toPublicUser(row);
