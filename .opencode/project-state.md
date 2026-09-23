@@ -1,7 +1,18 @@
 # Project State — VEIL
 
 ## Current Phase
-DEPLOYED — LIVE on Render (https://veil-d2te.onrender.com), commit 704c06a. Voroa service creation did NOT materialize despite dashboard acceptance (0 services visible via API minutes later) — user to re-check Voroa dashboard.
+DEPLOYED — LIVE on Render (https://veil-d2te.onrender.com), commit 704c06a. VOROA PROVISIONING FAILURE confirmed (see below) — needs Voroa support, not dashboard action.
+
+## Voroa Provisioning Failure — DEFINITIVE DIAGNOSIS (2026-09-23)
+- 3 proposals, all APPROVED by the user on the dashboard, ZERO services ever materialized:
+  - pfYbA_-huAiJLTpfV6eiPl77H5zOE5DZBypsnVboYI8 (project VEIL b77fcc6f) — expired before acceptance (first no-op)
+  - YvwqQZ3oq3rYTJQK7pF1ZO0lwui04YRaTBwYA31BiEc (project VEIL) — approved while valid, no service after 3.5+ min
+  - I0BJdv-p4GSSIg-PHbI2X0mFirOAFrJOWOTcvEZikow (FRESH project veil-app 74b90788) — approved while valid, no service after 2.5+ min
+- Fresh-project test isolates the cause: NOT project-specific, NOT proposal expiry — Voroa's provisioning pipeline accepts requests but never executes service creation. No job/deployment record, no error reason exposed by the API.
+- Billing is NOT the blocker (free plan inclusions confirmed: 500 build min, 5GB bandwidth; no mandate needed for free services). Direct API probing impossible (all paths 404 — surface hidden behind MCP).
+- **Action needed: contact Voroa support** with the 3 proposal IDs + project IDs above (approved-but-unprovisioned evidence). Retrying via re-propose is demonstrated futile.
+- Workspace id (user-provided): c5d1b878-d1b7-4202-891b-61c94dc2bdbd.
+
 
 ## Deployment Status (2026-09-22)
 - **LIVE**: Render web service `veil` (srv-daovjtlg1s2s738rt1m0), free plan, Oregon, autoDeploy ON (commits to main auto-deploy). Deploy history: d1c6260 build_failed (Tailwind devDeps skipped by NODE_ENV=production), 365ba08 build_failed (@types/node), 704c06a LIVE (platform-optional fix).
