@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
+import { MoonIcon, SunIcon } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -61,8 +63,17 @@ export function SiteNavbar() {
             <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/popular" />}>
               Popular
             </Button>
+            <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/polls" />}>
+              Polls
+            </Button>
             <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/archive" />}>
               Archive
+            </Button>
+            <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/search" />}>
+              Search
+            </Button>
+            <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/today" />}>
+              Today
             </Button>
             <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/activity" />}>
               Activity
@@ -106,7 +117,27 @@ export function SiteNavbar() {
             </Button>
           </div>
         )}
+        <ThemeToggle />
       </nav>
     </header>
+  )
+}
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return <Skeleton className="size-8 rounded-full" aria-hidden />
+  const dark = resolvedTheme === "dark"
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => setTheme(dark ? "light" : "dark")}
+      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      className="size-8 p-0"
+    >
+      {dark ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
+    </Button>
   )
 }

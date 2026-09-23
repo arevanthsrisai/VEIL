@@ -40,22 +40,28 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function ActivityPage() {
   const [confessions, setConfessions] = useState<ActivityConfession[]>([])
+  const [saved, setSaved] = useState<ConfessionItem[]>([])
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
   const router = useRouter()
 
   const load = useCallback(async () => {
     setStatus("loading")
     try {
-      const res = await fetch("/api/me/activity")
-      if (res.status === 401) {
+      const [activityRes, savedRes] = await Promise.all([
+        fetch("/api/me/activity"),
+        fetch("/api/me/bookmarks"),
+      ])
+      if (activityRes.status === 401 || savedRes.status === 401) {
         router.push("/login")
         return
       }
-      if (!res.ok) throw new Error("Request failed")
-      const data = (await res.json()) as {
-        confessions: ActivityConfession[]
-      }
-      setConfessions(data.confessions)
+      if (!activityRes.ok || !savedRes.ok) throw new Error("Request failed")
+      const [activityData, savedData] = (await Promise.all([
+        activityRes.json(),
+        savedRes.json(),
+      ])) as [{ confessions: ActivityConfession[] }, { confessions: ConfessionItem[] }]
+      setConfessions(activityData.confessions)
+      setSaved(savedData.confessions)
       setStatus("ready")
     } catch {
       setStatus("error")
@@ -73,7 +79,7 @@ export default function ActivityPage() {
           Your activity 🕵️
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Everything you've posted, moderation status included.
+          Everything you've posted and saved, moderation status included.
         </p>
       </div>
 
@@ -103,6 +109,7 @@ export default function ActivityPage() {
             <TabsTrigger value="confessions">
               My confessions ({confessions.length})
             </TabsTrigger>
+            <TabsTrigger value="saved">Saved ({saved.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="confessions" className="mt-4">
@@ -127,6 +134,22 @@ export default function ActivityPage() {
                       ) : undefined
                     }
                   />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="saved" className="mt-4">
+            {saved.length === 0 ? (
+              <StateMessage
+                emoji="🔖"
+                title="Nothing saved yet"
+                description="Bookmark posts you want to come back to."
+              />
+            ) : (
+              <div className="grid gap-4">
+                {saved.map((item) => (
+                  <ConfessionCard key={item.id} item={item} />
                 ))}
               </div>
             )}

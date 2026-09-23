@@ -24,6 +24,10 @@ type ModConfession = {
   status: string
 }
 
+type ModModerated = ModConfession & {
+  rejectionReason: string | null
+}
+
 type ModReport = {
   id: string
   reason: string
@@ -31,12 +35,25 @@ type ModReport = {
   confessionId?: string
   confessionStatus: string
   confessionExcerpt?: string
+  authorId?: string | null
 }
 
 type QueueData = {
   confessions: ModConfession[]
+  moderated?: ModModerated[]
   reports: ModReport[]
 }
+
+// keep in sync with HIDDEN_SENTINEL in src/lib/moderation.ts (server lib, not importable client-side)
+const HIDDEN_REASON = "Hidden by moderation"
+
+const CONF_FILTERS = [
+  { value: "PENDING", label: "Pending" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "REJECTED", label: "Rejected" },
+] as const
+
+type ConfFilter = (typeof CONF_FILTERS)[number]["value"]
 
 type ActionResult = { ok: true } | { redirect: true } | { error: string }
 
@@ -247,6 +264,62 @@ function PendingConfessionCard({
   )
 }
 
+function ModeratedConfessionCard({
+  item,
+  onStatusChange,
+}: {
+  item: ModModerated
+  onStatusChange: (id: string, status: "APPROVED" | "REJECTED", rejectionReason: string | null) => void
+}) {
+  const { moderate, busy } = useModerate((id) => {
+    if (item.status === "APPROVED") onStatusChange(id, "REJECTED", HIDDEN_REASON)
+    else onStatusChange(id, "APPROVED", null)
+  })
+  const path = `/api/moderation/confessions/${item.id}`
+  const hidden = item.rejectionReason === HIDDEN_REASON
+
+  return (
+    <Card>
+      <CardHeader>
+        <AuthorLine
+          nickname={item.nickname}
+          avatarEmoji={item.avatarEmoji}
+          createdAt={item.createdAt}
+          badge={
+            hidden ? <Badge variant="outline">Hidden 🙈</Badge> : <Badge variant="secondary">Rejected ❌</Badge>
+          }
+        />
+        {item.title && <CardTitle className="text-[15px]">{item.title}</CardTitle>}
+      </CardHeader>
+      <CardContent>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+          {item.content}
+        </p>
+      </CardContent>
+      <CardFooter className="justify-end gap-2">
+        {item.status === "APPROVED" ? (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() => void moderate(item.id, path, { action: "HIDDEN" }, "Post hidden 🙈")}
+          >
+            Hide
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => void moderate(item.id, path, { action: "RESTORED" }, "Post restored ✅")}
+          >
+            Restore
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
+  )
+}
+
 function ReportCard({
   item,
   onDone,
@@ -314,6 +387,7 @@ export function ModerationQueue() {
   const [data, setData] = useState<QueueData | null>(null)
   const [status, setStatus] = useState<"loading" | "ready" | "forbidden" | "error">("loading")
   const [refreshing, setRefreshing] = useState(false)
+  const [confFilter, setConfFilter] = useState<ConfFilter>("PENDING")
   const router = useRouter()
 
   const load = useCallback(
@@ -334,6 +408,7 @@ export function ModerationQueue() {
         const json = (await res.json()) as Partial<QueueData>
         setData({
           confessions: json.confessions ?? [],
+          moderated: json.moderated ?? [],
           reports: json.reports ?? [],
         })
         setStatus("ready")
@@ -355,6 +430,20 @@ export function ModerationQueue() {
     (id: string) =>
       setData((prev) =>
         prev ? { ...prev, confessions: prev.confessions.filter((c) => c.id !== id) } : prev
+      ),
+    []
+  )
+  const updateModeratedStatus = useCallback(
+    (id: string, newStatus: "APPROVED" | "REJECTED", rejectionReason: string | null) =>
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              moderated: (prev.moderated ?? []).map((c) =>
+                c.id === id ? { ...c, status: newStatus, rejectionReason } : c
+              ),
+            }
+          : prev
       ),
     []
   )
@@ -381,7 +470,15 @@ export function ModerationQueue() {
   }
 
   const pending = data?.confessions ?? []
+  const moderated = data?.moderated ?? []
   const reports = data?.reports ?? []
+  const approved = moderated.filter((c) => c.status === "APPROVED")
+  const rejected = moderated.filter((c) => c.status === "REJECTED")
+  const confCounts: Record<ConfFilter, number> = {
+    PENDING: pending.length,
+    APPROVED: approved.length,
+    REJECTED: rejected.length,
+  }
 
   return (
     <div className="grid gap-4">
@@ -389,7 +486,7 @@ export function ModerationQueue() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Moderation 🛡️</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Review pending confessions and reports.
+            Review, hide, or restore confessions and reports.
           </p>
         </div>
         <Button
@@ -433,13 +530,44 @@ export function ModerationQueue() {
           </TabsList>
 
           <TabsContent value="confessions" className="mt-3 grid gap-4">
-            {pending.length === 0 ? (
-              <EmptyQueue hint="No confessions waiting for review." />
-            ) : (
-              pending.map((item) => (
-                <PendingConfessionCard key={item.id} item={item} onDone={removeConfession} />
-              ))
-            )}
+            <div role="group" aria-label="Filter confessions by status" className="flex flex-wrap gap-2">
+              {CONF_FILTERS.map((f) => (
+                <Button
+                  key={f.value}
+                  variant={confFilter === f.value ? "secondary" : "outline"}
+                  size="sm"
+                  aria-pressed={confFilter === f.value}
+                  onClick={() => setConfFilter(f.value)}
+                >
+                  {f.label}
+                  {confCounts[f.value] > 0 ? ` (${confCounts[f.value]})` : ""}
+                </Button>
+              ))}
+            </div>
+            {confFilter === "PENDING" &&
+              (pending.length === 0 ? (
+                <EmptyQueue hint="No confessions waiting for review." />
+              ) : (
+                pending.map((item) => (
+                  <PendingConfessionCard key={item.id} item={item} onDone={removeConfession} />
+                ))
+              ))}
+            {confFilter === "APPROVED" &&
+              (approved.length === 0 ? (
+                <EmptyQueue hint="No approved posts." />
+              ) : (
+                approved.map((item) => (
+                  <ModeratedConfessionCard key={item.id} item={item} onStatusChange={updateModeratedStatus} />
+                ))
+              ))}
+            {confFilter === "REJECTED" &&
+              (rejected.length === 0 ? (
+                <EmptyQueue hint="No rejected or hidden posts." />
+              ) : (
+                rejected.map((item) => (
+                  <ModeratedConfessionCard key={item.id} item={item} onStatusChange={updateModeratedStatus} />
+                ))
+              ))}
           </TabsContent>
 
           <TabsContent value="reports" className="mt-3 grid gap-4">

@@ -3,10 +3,21 @@ import type { PublicUser, Role } from "./auth";
 import { toFeedItem, type ConfessionItem, type ConfessionRow, type ReactionCounts } from "./confessions";
 
 export type ModerationAction = "APPROVED" | "REJECTED";
+export type ModerationStatusAction = "HIDDEN" | "RESTORED";
+export type AnyModerationAction = ModerationAction | ModerationStatusAction;
 export type ReportAction = "RESOLVED" | "DISMISSED";
+
+// ponytail: hide/restore reuse status='REJECTED' + this sentinel instead of a schema
+// migration (HIDDEN status); add hidden_at column if hidden-vs-rejected analytics matter
+export const HIDDEN_SENTINEL = "Hidden by moderation";
 
 export type PendingConfessionItem = ConfessionItem & {
   status: "PENDING";
+};
+
+export type ModeratedConfessionItem = ConfessionItem & {
+  status: "APPROVED" | "REJECTED";
+  rejectionReason: string | null;
 };
 
 export type OpenReportItem = {
@@ -16,6 +27,7 @@ export type OpenReportItem = {
   confessionId: string | null;
   confessionStatus: string | null;
   confessionExcerpt: string | null;
+  authorId: string | null;
 };
 
 export type AdminUserItem = {
@@ -24,6 +36,7 @@ export type AdminUserItem = {
   avatarEmoji: string;
   role: Role;
   createdAt: string;
+  restrictedUntil: string | null;
 };
 
 export type AdminStats = {
@@ -52,8 +65,18 @@ export function isAdmin(user: PublicUser | null): user is PublicUser {
   return user !== null && user.role === "ADMIN";
 }
 
-export function validateModerationAction(action: unknown): action is ModerationAction {
-  return action === "APPROVED" || action === "REJECTED";
+export function validateModerationAction(action: unknown): action is AnyModerationAction {
+  return (
+    action === "APPROVED" ||
+    action === "REJECTED" ||
+    action === "HIDDEN" ||
+    action === "RESTORED"
+  );
+}
+
+export function validateRestrictionDays(days: unknown): days is number | null {
+  if (days === null) return true;
+  return typeof days === "number" && Number.isInteger(days) && days >= 1 && days <= 30;
 }
 
 export function validateReportAction(action: unknown): action is ReportAction {
@@ -87,6 +110,7 @@ type OpenReportRow = {
   confession_id: string | null;
   confession_status: string | null;
   confession_content: string | null;
+  author_id: string | null;
 };
 
 type AdminUserRow = {
@@ -95,6 +119,7 @@ type AdminUserRow = {
   avatar_emoji: string;
   role: Role;
   created_at: string;
+  restricted_until: string | null;
 };
 
 type NotificationRow = {
@@ -136,10 +161,39 @@ export async function listPendingConfessions(
   return rows.map(toPendingFeedItem);
 }
 
+export async function listModeratedConfessions(
+  userId: string | null,
+): Promise<ModeratedConfessionItem[]> {
+  let mineJoin = "";
+  let mineSelect = "'[]'::jsonb AS my_reactions";
+  const params: unknown[] = [];
+  if (userId !== null) {
+    params.push(userId);
+    mineJoin = `LEFT JOIN (SELECT confession_id, jsonb_agg(emoji) AS emojis FROM reactions WHERE user_id = $${params.length} GROUP BY confession_id) mr ON mr.confession_id = c.id`;
+    mineSelect = "COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions";
+  }
+  const { rows } = await query<ConfessionRow>(
+    `SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, u.nickname, u.avatar_emoji,
+            COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, ${mineSelect}
+     FROM confessions c
+     JOIN users u ON u.id = c.author_id
+     ${PENDING_REACTION_AGG}
+     ${mineJoin}
+     WHERE c.status IN ('APPROVED', 'REJECTED')
+     ORDER BY c.created_at DESC`,
+    params,
+  );
+  return rows.map((row) => ({
+    ...toFeedItem(row),
+    status: row.status === "REJECTED" ? ("REJECTED" as const) : ("APPROVED" as const),
+    rejectionReason: row.rejection_reason,
+  }));
+}
+
 export async function listOpenReports(): Promise<OpenReportItem[]> {
   const { rows } = await query<OpenReportRow>(
     `SELECT r.id, r.reason, r.created_at, r.confession_id,
-            cf.status AS confession_status, cf.content AS confession_content
+            cf.status AS confession_status, cf.content AS confession_content, cf.author_id AS author_id
      FROM reports r
      LEFT JOIN confessions cf ON cf.id = r.confession_id
      WHERE r.status = 'OPEN'
@@ -152,6 +206,7 @@ export async function listOpenReports(): Promise<OpenReportItem[]> {
     confessionId: row.confession_id,
     confessionStatus: row.confession_status,
     confessionExcerpt: toExcerpt(row.confession_content),
+    authorId: row.author_id,
   }));
 }
 
@@ -191,6 +246,70 @@ export async function moderateConfession(
   return { ok: true };
 }
 
+// Hide an APPROVED post: reversible, distinct from rejection. Status stays the
+// lifecycle source of truth; the HIDDEN_SENTINEL reason marks it as hidden.
+// Writes audit_logs (not moderation_actions — its CHECK only allows APPROVED/REJECTED).
+export async function hideConfession(
+  id: string,
+  staffId: string,
+): Promise<{ ok: true } | { missing: true } | { conflict: true }> {
+  const result = await transaction(async (tx) => {
+    const { rows } = await tx.query(
+      `UPDATE confessions SET status = 'REJECTED', rejection_reason = $1, approved_at = NULL, approved_by = NULL
+       WHERE id = $2 AND status = 'APPROVED'
+       RETURNING author_id`,
+      [HIDDEN_SENTINEL, id],
+    );
+    const target = rows[0] as { author_id: string } | undefined;
+    if (!target) return null;
+    await tx.query(
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id, meta) VALUES ($1, 'POST_HIDDEN', 'confession', $2, $3::jsonb)`,
+      [staffId, id, JSON.stringify({ reason: HIDDEN_SENTINEL })],
+    );
+    await tx.query(`INSERT INTO notifications (user_id, type, confession_id) VALUES ($1, 'post_hidden', $2)`, [
+      target.author_id,
+      id,
+    ]);
+    return { author_id: target.author_id };
+  });
+  if (!result) {
+    const { rows: exists } = await query(`SELECT 1 FROM confessions WHERE id = $1`, [id]);
+    return exists.length > 0 ? { conflict: true } : { missing: true };
+  }
+  return { ok: true };
+}
+
+// Restore a REJECTED post (hidden or rejected) back to APPROVED.
+export async function restoreConfession(
+  id: string,
+  staffId: string,
+): Promise<{ ok: true } | { missing: true } | { conflict: true }> {
+  const result = await transaction(async (tx) => {
+    const { rows } = await tx.query(
+      `UPDATE confessions SET status = 'APPROVED', approved_at = now(), approved_by = $1, rejection_reason = NULL
+       WHERE id = $2 AND status = 'REJECTED'
+       RETURNING author_id`,
+      [staffId, id],
+    );
+    const target = rows[0] as { author_id: string } | undefined;
+    if (!target) return null;
+    await tx.query(
+      `INSERT INTO audit_logs (actor_id, action, target_type, target_id, meta) VALUES ($1, 'POST_RESTORED', 'confession', $2, $3::jsonb)`,
+      [staffId, id, JSON.stringify({ reason: null })],
+    );
+    await tx.query(`INSERT INTO notifications (user_id, type, confession_id) VALUES ($1, 'post_restored', $2)`, [
+      target.author_id,
+      id,
+    ]);
+    return { author_id: target.author_id };
+  });
+  if (!result) {
+    const { rows: exists } = await query(`SELECT 1 FROM confessions WHERE id = $1`, [id]);
+    return exists.length > 0 ? { conflict: true } : { missing: true };
+  }
+  return { ok: true };
+}
+
 export async function resolveReport(
   id: string,
   moderatorId: string,
@@ -213,7 +332,7 @@ export async function resolveReport(
 
 export async function listAdminUsers(): Promise<AdminUserItem[]> {
   const { rows } = await query<AdminUserRow>(
-    `SELECT id, nickname, avatar_emoji, role, created_at FROM users ORDER BY created_at DESC`,
+    `SELECT id, nickname, avatar_emoji, role, created_at, restricted_until FROM users ORDER BY created_at DESC`,
   );
   return rows.map((row) => ({
     id: row.id,
@@ -221,6 +340,7 @@ export async function listAdminUsers(): Promise<AdminUserItem[]> {
     avatarEmoji: row.avatar_emoji,
     role: row.role,
     createdAt: new Date(row.created_at).toISOString(),
+    restrictedUntil: row.restricted_until ? new Date(row.restricted_until).toISOString() : null,
   }));
 }
 
@@ -231,6 +351,45 @@ export async function setUserRole(
   const { rows } = await query<{ id: string }>(`SELECT id FROM users WHERE id = $1`, [userId]);
   if (!rows[0]) return { missing: true };
   await query(`UPDATE users SET role = $1 WHERE id = $2`, [role, userId]);
+  return { ok: true };
+}
+
+// Restriction is enforced at login (and never against staff). Existing sessions
+// are not invalidated — ponytail ceiling, purge sessions on restrict if needed.
+export async function restrictUser(
+  userId: string,
+  adminId: string,
+  days: number,
+): Promise<{ ok: true } | { missing: true } | { forbidden: true }> {
+  const { rows } = await query<{ id: string; role: Role }>(
+    `SELECT id, role FROM users WHERE id = $1`,
+    [userId],
+  );
+  const target = rows[0];
+  if (!target) return { missing: true };
+  if (target.role !== "USER") return { forbidden: true };
+  await query(`UPDATE users SET restricted_until = now() + make_interval(days => $1) WHERE id = $2`, [
+    days,
+    userId,
+  ]);
+  await query(
+    `INSERT INTO audit_logs (actor_id, action, target_type, target_id, meta) VALUES ($1, 'USER_RESTRICTED', 'user', $2, $3::jsonb)`,
+    [adminId, userId, JSON.stringify({ days })],
+  );
+  return { ok: true };
+}
+
+export async function unrestrictUser(
+  userId: string,
+  adminId: string,
+): Promise<{ ok: true } | { missing: true }> {
+  const { rows } = await query<{ id: string }>(`SELECT id FROM users WHERE id = $1`, [userId]);
+  if (!rows[0]) return { missing: true };
+  await query(`UPDATE users SET restricted_until = NULL WHERE id = $1`, [userId]);
+  await query(
+    `INSERT INTO audit_logs (actor_id, action, target_type, target_id) VALUES ($1, 'USER_UNRESTRICTED', 'user', $2)`,
+    [adminId, userId],
+  );
   return { ok: true };
 }
 

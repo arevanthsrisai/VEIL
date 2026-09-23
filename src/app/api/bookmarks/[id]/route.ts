@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, type PublicUser } from "@/lib/auth";
-import { isStaff, listModeratedConfessions, listOpenReports, listPendingConfessions } from "@/lib/moderation";
+import { unbookmarkConfession } from "@/lib/bookmarks";
 
 export const runtime = "nodejs";
 
@@ -10,23 +10,24 @@ function dbError(err: unknown, fallback: string) {
   return NextResponse.json({ error: fallback }, { status: 500 });
 }
 
-export async function GET() {
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+
   let user: PublicUser | null;
   try {
     user = await getCurrentUser();
   } catch (err) {
-    return dbError(err, "Failed to load moderation queue.");
+    return dbError(err, "Failed to remove saved post.");
   }
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isStaff(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
-    const [confessions, moderated, reports] = await Promise.all([
-      listPendingConfessions(user.id),
-      listModeratedConfessions(user.id),
-      listOpenReports(),
-    ]);
-    return NextResponse.json({ confessions, moderated, reports });
+    await unbookmarkConfession(user.id, id);
+    return NextResponse.json({ bookmarked: false });
   } catch (err) {
-    return dbError(err, "Failed to load moderation queue.");
+    return dbError(err, "Failed to remove saved post.");
   }
 }

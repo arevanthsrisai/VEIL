@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { SiteNavbar } from "@/components/site/navbar";
+import { AnnouncementBanner } from "@/components/site/announcement-banner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,10 +26,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <SiteNavbar />
+        <AnnouncementBanner />
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:py-10">
           {children}
         </main>
@@ -52,6 +57,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/rules" className="transition-colors hover:text-foreground">
                 Rules
               </Link>
+              <Link href="/moderation-policy" className="transition-colors hover:text-foreground">
+                Moderation
+              </Link>
+              <Link href="/terms" className="transition-colors hover:text-foreground">
+                Terms
+              </Link>
               <Link href="/privacy" className="transition-colors hover:text-foreground">
                 Privacy
               </Link>
@@ -62,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </footer>
         <Toaster position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   );

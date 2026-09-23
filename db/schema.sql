@@ -13,3 +13,12 @@ CREATE INDEX IF NOT EXISTS reports_status_idx ON reports (status, created_at);
 CREATE TABLE IF NOT EXISTS moderation_actions (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), moderator_id UUID NOT NULL REFERENCES users(id), action TEXT NOT NULL CHECK (action IN ('APPROVED','REJECTED')), target_type TEXT NOT NULL CHECK (target_type IN ('confession')), target_id UUID NOT NULL, reason TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, type TEXT NOT NULL, confession_id UUID REFERENCES confessions(id) ON DELETE CASCADE, read BOOLEAN NOT NULL DEFAULT false, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, created_at);
+
+CREATE TABLE IF NOT EXISTS bookmarks (user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, confession_id UUID NOT NULL REFERENCES confessions(id) ON DELETE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, confession_id));
+CREATE TABLE IF NOT EXISTS polls (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), question TEXT NOT NULL CHECK (length(question) BETWEEN 1 AND 500), options JSONB NOT NULL DEFAULT '[]', status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','CLOSED')), ends_at TIMESTAMPTZ, created_by UUID NOT NULL REFERENCES users(id), created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS poll_votes (poll_id UUID NOT NULL REFERENCES polls(id) ON DELETE CASCADE, user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, option_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (poll_id, user_id));
+CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_by UUID REFERENCES users(id));
+CREATE TABLE IF NOT EXISTS audit_logs (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), actor_id UUID NOT NULL REFERENCES users(id), action TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT, meta JSONB, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS bookmarks_user_idx ON bookmarks (user_id, created_at);
+CREATE INDEX IF NOT EXISTS polls_status_idx ON polls (status, created_at);
+CREATE INDEX IF NOT EXISTS audit_logs_actor_idx ON audit_logs (actor_id, created_at);

@@ -16,6 +16,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { relativeTime } from "@/components/site/format"
+import { PollManager } from "@/components/site/poll-manager"
+import { SettingsPanel } from "@/components/site/settings-panel"
+import { AuditLogList } from "@/components/site/audit-log-list"
+import type { AuditLogEntry } from "@/lib/settings"
 
 type Stats = {
   users: number
@@ -29,6 +33,7 @@ type AdminUser = {
   avatarEmoji: string
   role: string
   createdAt: string
+  restrictedUntil: string | null
 }
 
 const ROLES = ["USER", "MODERATOR", "ADMIN"] as const
@@ -57,12 +62,15 @@ function UserRow({
   isSelf,
   busy,
   onRoleChange,
+  onRestrict,
 }: {
   user: AdminUser
   isSelf: boolean
   busy: boolean
   onRoleChange: (userId: string, role: Role) => void
+  onRestrict: (userId: string, days: number | null) => void
 }) {
+  const restricted = user.restrictedUntil !== null && new Date(user.restrictedUntil).getTime() > Date.now()
   return (
     <Card className="items-center gap-3 py-3" size="sm">
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -73,9 +81,11 @@ function UserRow({
           <p className="flex items-center gap-1.5 truncate text-sm font-medium">
             {user.nickname}
             {isSelf && <span className="text-xs font-normal text-muted-foreground">(you)</span>}
+            {restricted && <Badge variant="destructive">Restricted 🚫</Badge>}
           </p>
           <p className="text-xs text-muted-foreground">
             Joined {relativeTime(user.createdAt)}
+            {restricted && ` · until ${new Date(user.restrictedUntil!).toLocaleString()}`}
           </p>
         </div>
       </div>
@@ -83,7 +93,7 @@ function UserRow({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" size="sm" disabled={busy} aria-label={`Change role for ${user.nickname}`}>
+            <Button variant="outline" size="sm" disabled={busy} aria-label={`Moderate account for ${user.nickname}`}>
               {user.role === (isSelf ? "ADMIN" : user.role) ? "Change" : user.role}
             </Button>
           }
@@ -102,6 +112,13 @@ function UserRow({
               </DropdownMenuItem>
             )
           })}
+          {user.role === "USER" && !isSelf && (
+            <DropdownMenuItem
+              onClick={() => onRestrict(user.id, restricted ? null : 7)}
+            >
+              {restricted ? "Remove restriction" : "Restrict 7 days"}
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </Card>
@@ -115,6 +132,7 @@ export function AdminPanel() {
   const [refreshing, setRefreshing] = useState(false)
   const [busyUserId, setBusyUserId] = useState<string | null>(null)
   const [myId, setMyId] = useState<string | null>(null)
+  const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -135,9 +153,10 @@ export function AdminPanel() {
       if (initial) setStatus("loading")
       else setRefreshing(true)
       try {
-        const [statsRes, usersRes] = await Promise.all([
+        const [statsRes, usersRes, logsRes] = await Promise.all([
           fetch("/api/admin/stats"),
           fetch("/api/admin/users"),
+          fetch("/api/admin/audit-logs"),
         ])
         if (usersRes.status === 401 || statsRes.status === 401) {
           router.push("/login")
@@ -152,6 +171,10 @@ export function AdminPanel() {
         const usersData = (await usersRes.json()) as { users: AdminUser[] }
         setStats(statsData.stats)
         setUsers(usersData.users ?? [])
+        if (logsRes.ok) {
+          const logsData = (await logsRes.json()) as { logs: AuditLogEntry[] }
+          setLogs(logsData.logs ?? [])
+        }
         setStatus("ready")
       } catch {
         if (initial) setStatus("error")
@@ -189,6 +212,34 @@ export function AdminPanel() {
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)))
     } catch {
       toast.error("Couldn't update role.")
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
+  async function changeRestrict(userId: string, days: number | null) {
+    const target = users.find((u) => u.id === userId)
+    setBusyUserId(userId)
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/restrict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days }),
+      })
+      if (res.status === 401) {
+        router.push("/login")
+        return
+      }
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(data?.error ?? "Couldn't update restriction.")
+        return
+      }
+      const restrictedUntil = days === null ? null : new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, restrictedUntil } : u)))
+      toast.success(days === null ? `${target?.nickname ?? "User"} unrestricted` : `${target?.nickname ?? "User"} restricted for ${days} days`)
+    } catch {
+      toast.error("Couldn't update restriction.")
     } finally {
       setBusyUserId(null)
     }
@@ -307,8 +358,23 @@ export function AdminPanel() {
                 isSelf={user.id === myId}
                 busy={busyUserId === user.id}
                 onRoleChange={(id, role) => void changeRole(id, role)}
+                onRestrict={(id, days) => void changeRestrict(id, days)}
               />
             ))}
+          </div>
+
+          <PollManager />
+
+          <SettingsPanel />
+
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Audit log 📜</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Moderation, admin, and security events. Newest first.
+            </p>
+            <div className="mt-3">
+              <AuditLogList entries={logs} />
+            </div>
           </div>
         </>
       )}
