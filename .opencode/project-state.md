@@ -1,7 +1,14 @@
 # Project State — VEIL
 
 ## Current Phase
-RECOVERY + COMPLETION DONE — deployed on Render (commit d439e63 pushed). All spec gaps closed; only cosmetic/Voroa items remain.
+FINAL PRODUCT COMPLETE — deployed on Render (e4e1ce2), production DB reset + fresh. All feature-matrix gaps closed.
+
+## Final Completion Wave (2026-09-24)
+- Feature-matrix gap audit: ALL closed. New: profile page + nickname/avatar edit + password change (session invalidation, others only) + active sessions/logout-all + must_change_password enforcement; post types (10-type whitelist) + anonymous posting (composer toggle, identity hidden in UI/metadata) + type-filtered feed + OG/Twitter metadata; admin user management (search, password reset → temp password shown once + force change at next login, account removal USER-only with cascade + audit); Borrow/Lend module (offer/claim/return/close, race-safe, category chips, audited); mobile-first nav (bottom tab bar, 5 tabs, active states, safe-area padding); admin control center rebuild (Overview/Users/Polls/Settings/Audit tabs).
+- Production DB RESET (§6): Neon identity verified first (host c-4.ap-southeast-1, db neondb, PG 18.6); all 13 tables dropped + schema re-applied (scripts/db-reset.mjs); seeded ONLY revanth admin (role ADMIN, must_change_password=true). Reset verified live: admin login 200 + mustChangePassword, admin stats {users:1, posts 0}, admin settings 200, registration 201.
+- Verified: tsc CLEAN · vitest 33/33 · build CLEAN (58 routes) · E2E 116 passed/8 skipped (redundant fixme duplicates; admin-flows + admin-users + profile + composer + borrow specs all green) · zero stubs/comments remnants · Render LIVE (bfde8f1+).
+- Note: e2e moderator-flow fixmes superseded by admin-flows.spec (passes with bootstrapped e2e_admin — which the DB reset removed; re-bootstrap locally if needed).
+
 
 ## Completion Wave (2026-09-23) — gap analysis + implementation
 - Gap analysis vs master prompt: 13 gaps found, ALL CLOSED except noted ceilings.
