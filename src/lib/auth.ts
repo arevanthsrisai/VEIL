@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
-import { query } from "./db";
+import { query, transaction } from "./db";
 
 export const SESSION_COOKIE = "session";
 export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
@@ -13,14 +13,18 @@ export type PublicUser = {
   nickname: string;
   avatar_emoji: string;
   role: Role;
+  must_change_password?: boolean;
 };
 
 type UserRow = PublicUser & {
   username: string;
   password_hash: string;
+  restricted_until: Date | null;
 };
 
 type SessionRow = PublicUser & { expires_at: string; restricted_until: string | null };
+
+export type SessionSummary = { id: string; expires_at: string };
 
 const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
 export const DEFAULT_AVATAR = "🎭";
@@ -73,8 +77,15 @@ export function toPublicUser(row: {
   nickname: string;
   avatar_emoji: string;
   role: Role;
+  must_change_password?: boolean;
 }): PublicUser {
-  return { id: row.id, nickname: row.nickname, avatar_emoji: row.avatar_emoji, role: row.role };
+  return {
+    id: row.id,
+    nickname: row.nickname,
+    avatar_emoji: row.avatar_emoji,
+    role: row.role,
+    must_change_password: row.must_change_password,
+  };
 }
 
 export function sessionCookieOptions(expires: Date) {
@@ -104,7 +115,7 @@ export async function createSession(userId: string): Promise<{ token: string; ex
 export async function validateSession(token: string): Promise<PublicUser | null> {
   if (!token) return null;
   const { rows } = await query<SessionRow>(
-    `SELECT u.id, u.nickname, u.avatar_emoji, u.role, u.restricted_until, s.expires_at
+    `SELECT u.id, u.nickname, u.avatar_emoji, u.role, u.restricted_until, u.must_change_password, s.expires_at
      FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = $1`,
     [hashToken(token)],
   );
@@ -133,8 +144,79 @@ export async function getCurrentUser(): Promise<PublicUser | null> {
 }
 
 export async function findUserByUsername(username: string): Promise<UserRow | null> {
-  const { rows } = await query<UserRow>("SELECT id, username, password_hash, nickname, avatar_emoji, role FROM users WHERE lower(username) = lower($1)", [
-    username,
-  ]);
+  const { rows } = await query<UserRow>(
+    "SELECT id, username, password_hash, nickname, avatar_emoji, role, restricted_until, must_change_password FROM users WHERE lower(username) = lower($1)",
+    [username],
+  );
   return rows[0] ?? null;
+}
+
+export async function updateProfile(
+  userId: string,
+  update: { nickname?: string; avatar_emoji?: string },
+): Promise<PublicUser> {
+  const sets: string[] = [];
+  const params: unknown[] = [];
+  if (update.nickname !== undefined) {
+    params.push(update.nickname);
+    sets.push(`nickname = $${params.length}`);
+  }
+  if (update.avatar_emoji !== undefined) {
+    params.push(update.avatar_emoji);
+    sets.push(`avatar_emoji = $${params.length}`);
+  }
+  const columns = "id, nickname, avatar_emoji, role, must_change_password";
+  if (sets.length === 0) {
+    const { rows } = await query<PublicUser>(`SELECT ${columns} FROM users WHERE id = $1`, [userId]);
+    const row = rows[0];
+    if (!row) throw new Error("User not found.");
+    return row;
+  }
+  params.push(userId);
+  const { rows } = await query<PublicUser>(
+    `UPDATE users SET ${sets.join(", ")} WHERE id = $${params.length} RETURNING ${columns}`,
+    params,
+  );
+  const row = rows[0];
+  if (!row) throw new Error("User not found.");
+  return row;
+}
+
+export async function changePassword(
+  userId: string,
+  newPassword: string,
+  keepTokenHash: string | null,
+): Promise<void> {
+  const passwordHash = await hashPassword(newPassword);
+  await transaction(async (tx) => {
+    await tx.query("UPDATE users SET password_hash = $1, must_change_password = false WHERE id = $2", [
+      passwordHash,
+      userId,
+    ]);
+    if (keepTokenHash)
+      await tx.query("DELETE FROM sessions WHERE user_id = $1 AND id <> $2", [userId, keepTokenHash]);
+    else await tx.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
+    await tx.query(
+      "INSERT INTO audit_logs (actor_id, action, target_type, target_id) VALUES ($1, 'PASSWORD_CHANGED', 'user', $2)",
+      [userId, userId],
+    );
+  });
+}
+
+export async function listUserSessions(userId: string): Promise<SessionSummary[]> {
+  const { rows } = await query<{ id: string; expires_at: Date | string }>(
+    "SELECT id, expires_at FROM sessions WHERE user_id = $1 AND expires_at > now() ORDER BY expires_at DESC",
+    [userId],
+  );
+  // masked ids only — the full token hash never leaves this function
+  return rows.map((r) => ({
+    id: `${r.id.slice(0, 8)}…`,
+    expires_at: new Date(r.expires_at).toISOString(),
+  }));
+}
+
+export async function destroyOtherSessions(userId: string, keepTokenHash: string | null): Promise<void> {
+  if (keepTokenHash)
+    await query("DELETE FROM sessions WHERE user_id = $1 AND id <> $2", [userId, keepTokenHash]);
+  else await query("DELETE FROM sessions WHERE user_id = $1", [userId]);
 }

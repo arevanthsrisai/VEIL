@@ -14,6 +14,8 @@ export type ConfessionItem = {
   avatarEmoji: string;
   reactionCounts: ReactionCounts;
   myReactions?: string[];
+  type?: string | null;
+  anonymous?: boolean;
 };
 
 export type ConfessionDetail = ConfessionItem & {
@@ -34,10 +36,32 @@ export type ConfessionRow = {
   avatar_emoji: string;
   reaction_counts: ReactionCounts | string | null;
   my_reactions?: string[] | string | null;
+  type?: string | null;
+  anonymous?: boolean;
 };
 
 export const CONFESSIONS_DEFAULT_LIMIT = 20;
 export const CONFESSIONS_MAX_LIMIT = 50;
+
+export const CONFESSION_TYPES = [
+  "thought",
+  "idea",
+  "question",
+  "discussion",
+  "knowledge",
+  "experience",
+  "resource",
+  "event",
+  "opportunity",
+  "doubt",
+] as const;
+
+export function validateConfessionType(type: unknown): string | null {
+  if (type === undefined || type === null) return null;
+  if (typeof type !== "string" || !(CONFESSION_TYPES as readonly string[]).includes(type))
+    return "Invalid post type.";
+  return null;
+}
 
 export function validateConfessionContent(content: unknown): string | null {
   if (typeof content !== "string") return "Content must be 1-5000 characters.";
@@ -121,6 +145,8 @@ export function toFeedItem(row: ConfessionRow): ConfessionItem {
     nickname: row.nickname,
     avatarEmoji: row.avatar_emoji,
     reactionCounts: toReactionCounts(row.reaction_counts),
+    type: row.type ?? null,
+    anonymous: row.anonymous === true,
   };
   const myReactions = toMyReactions(row.my_reactions);
   if (myReactions) item.myReactions = myReactions;
@@ -135,6 +161,10 @@ export function toConfessionDetail(row: ConfessionRow, user: PublicUser): Confes
     status: row.status,
     isOwn,
   };
+  if (row.anonymous === true && !privileged) {
+    detail.nickname = "🕵️ Anonymous";
+    detail.avatarEmoji = "🎭";
+  }
   if (privileged) detail.rejectionReason = row.rejection_reason;
   return detail;
 }
@@ -149,8 +179,14 @@ export async function listApprovedConfessions(
   limit: number,
   cursor: string | null,
   userId: string | null,
+  type: string | null = null,
 ): Promise<{ confessions: ConfessionItem[]; nextCursor: string | null }> {
   const params: unknown[] = [];
+  let typeFilter = "";
+  if (type !== null) {
+    params.push(type);
+    typeFilter = `AND c.type = $${params.length}`;
+  }
   let cursorFilter = "";
   if (cursor !== null) {
     params.push(cursor);
@@ -165,18 +201,25 @@ export async function listApprovedConfessions(
   }
   params.push(limit);
   const { rows } = await query<ConfessionRow>(
-    `SELECT c.id, c.title, c.content, c.created_at, u.nickname, u.avatar_emoji,
+    `SELECT c.id, c.title, c.content, c.type, c.anonymous, c.created_at, u.nickname, u.avatar_emoji,
             COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, ${mineSelect}
      FROM confessions c
      JOIN users u ON u.id = c.author_id
      ${REACTION_AGG}
      ${mineJoin}
-     WHERE c.status = 'APPROVED' ${cursorFilter}
+     WHERE c.status = 'APPROVED' ${typeFilter} ${cursorFilter}
      ORDER BY c.created_at DESC
      LIMIT $${params.length}`,
     params,
   );
-  const confessions = rows.map(toFeedItem);
+  const confessions = rows.map((row) => {
+    const item = toFeedItem(row);
+    if (item.anonymous) {
+      item.nickname = "🕵️ Anonymous";
+      item.avatarEmoji = "🎭";
+    }
+    return item;
+  });
   const nextCursor =
     confessions.length === limit && confessions.length > 0
       ? confessions[confessions.length - 1].createdAt
@@ -197,7 +240,7 @@ export async function getConfessionById(
     mineSelect = "COALESCE(mr.emojis, '[]'::jsonb) AS my_reactions";
   }
   const { rows } = await query<ConfessionRow>(
-    `SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.created_at, c.author_id,
+    `SELECT c.id, c.title, c.content, c.status, c.rejection_reason, c.type, c.anonymous, c.created_at, c.author_id,
             u.nickname, u.avatar_emoji,
             COALESCE(r.counts, '{}'::jsonb) AS reaction_counts, ${mineSelect}
      FROM confessions c
@@ -222,12 +265,14 @@ export async function createConfession(
   authorId: string,
   title: string | null,
   content: string,
+  type: string | null = null,
+  anonymous: boolean = false,
 ): Promise<{ id: string; status: ConfessionStatus }> {
   const { rows } = await query<{ id: string; status: ConfessionStatus }>(
-    `INSERT INTO confessions (author_id, title, content, status)
-     VALUES ($1, $2, $3, 'PENDING')
+    `INSERT INTO confessions (author_id, title, content, status, type, anonymous)
+     VALUES ($1, $2, $3, 'PENDING', $4, $5)
      RETURNING id, status`,
-    [authorId, title, content],
+    [authorId, title, content, type, anonymous],
   );
   return rows[0];
 }

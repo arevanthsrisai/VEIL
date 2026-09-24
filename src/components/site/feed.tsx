@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -23,24 +24,34 @@ type ConfessionItem = {
   avatarEmoji: string
   reactionCounts: ReactionCounts
   myReactions?: string[]
+  type?: string | null
+  anonymous?: boolean
 }
 
 function ConfessionCard({ item }: { item: ConfessionItem }) {
+  const anonymous = item.anonymous === true
   return (
     <Card className="transition-shadow hover:ring-foreground/20">
       <CardHeader>
         <div className="flex items-center gap-2.5">
           <Avatar size="sm" aria-hidden>
             <AvatarFallback className="text-sm">
-              {item.avatarEmoji}
+              {anonymous ? "🎭" : item.avatarEmoji}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{item.nickname}</p>
+            <p className="truncate text-sm font-medium">
+              {anonymous ? "🕵️ Anonymous" : item.nickname}
+            </p>
             <p className="text-xs text-muted-foreground">
               {relativeTime(item.createdAt)}
             </p>
           </div>
+          {item.type && (
+            <Badge variant="secondary" className="ml-auto">
+              {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+            </Badge>
+          )}
         </div>
         {item.title && (
           <CardTitle className="text-[15px]">

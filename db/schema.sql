@@ -22,3 +22,11 @@ CREATE TABLE IF NOT EXISTS audit_logs (id UUID PRIMARY KEY DEFAULT gen_random_uu
 CREATE INDEX IF NOT EXISTS bookmarks_user_idx ON bookmarks (user_id, created_at);
 CREATE INDEX IF NOT EXISTS polls_status_idx ON polls (status, created_at);
 CREATE INDEX IF NOT EXISTS audit_logs_actor_idx ON audit_logs (actor_id, created_at);
+
+ALTER TABLE confessions ADD COLUMN IF NOT EXISTS type TEXT;
+ALTER TABLE confessions ADD COLUMN IF NOT EXISTS anonymous BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS confessions_type_idx ON confessions (type, status, created_at);
+CREATE TABLE IF NOT EXISTS borrow_items (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, title TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 120), description TEXT CHECK (length(description) <= 2000), category TEXT NOT NULL DEFAULT 'other', status TEXT NOT NULL DEFAULT 'AVAILABLE' CHECK (status IN ('AVAILABLE','BORROWED','RETURNED','CLOSED')), borrower_id UUID REFERENCES users(id), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS borrow_items_status_idx ON borrow_items (status, created_at);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();

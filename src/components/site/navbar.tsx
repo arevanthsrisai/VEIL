@@ -60,6 +60,9 @@ export function SiteNavbar() {
         </Link>
         {(!loaded || !user || user.role === "USER") && (
           <div className="hidden items-center gap-0.5 sm:flex">
+            <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/" />}>
+              Home
+            </Button>
             <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/popular" />}>
               Popular
             </Button>
@@ -84,6 +87,9 @@ export function SiteNavbar() {
           <Skeleton className="size-8 rounded-full" />
         ) : user ? (
           <div className="flex items-center gap-2.5">
+            <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/profile" />}>
+              Profile
+            </Button>
             {(user.role === "MODERATOR" || user.role === "ADMIN") && (
               <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/moderation" />}>
                 Moderation

@@ -9,6 +9,7 @@ import {
   normalizeConfessionTitle,
   validateConfessionContent,
   validateConfessionTitle,
+  validateConfessionType,
 } from "@/lib/confessions";
 
 export const runtime = "nodejs";
@@ -44,9 +45,16 @@ export async function GET(req: Request) {
     if (Number.isNaN(t)) return NextResponse.json({ error: "Invalid cursor." }, { status: 400 });
     cursor = new Date(t).toISOString();
   }
+  const rawType = searchParams.get("type");
+  let type: string | null = null;
+  if (rawType !== null && rawType !== "") {
+    const typeError = validateConfessionType(rawType);
+    if (typeError) return NextResponse.json({ error: typeError }, { status: 400 });
+    type = rawType;
+  }
 
   try {
-    return NextResponse.json(await listApprovedConfessions(limit, cursor, user.id));
+    return NextResponse.json(await listApprovedConfessions(limit, cursor, user.id, type));
   } catch (err) {
     return dbError(err, "Failed to load confessions.");
   }
@@ -61,7 +69,7 @@ export async function POST(req: Request) {
   }
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let body: { title?: unknown; content?: unknown };
+  let body: { title?: unknown; content?: unknown; type?: unknown; anonymous?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -71,6 +79,14 @@ export async function POST(req: Request) {
   if (contentError) return NextResponse.json({ error: contentError }, { status: 400 });
   const titleError = validateConfessionTitle(body.title);
   if (titleError) return NextResponse.json({ error: titleError }, { status: 400 });
+  const typeError = validateConfessionType(body.type);
+  if (typeError) return NextResponse.json({ error: typeError }, { status: 400 });
+  let anonymous = false;
+  if (body.anonymous !== undefined && body.anonymous !== null) {
+    if (typeof body.anonymous !== "boolean")
+      return NextResponse.json({ error: "Invalid anonymous value." }, { status: 400 });
+    anonymous = body.anonymous;
+  }
   if (!consumeConfessionQuota(user.id))
     return NextResponse.json({ error: "Rate limit exceeded. Try again later." }, { status: 429 });
 
@@ -79,6 +95,8 @@ export async function POST(req: Request) {
       user.id,
       normalizeConfessionTitle(body.title),
       (body.content as string).trim(),
+      typeof body.type === "string" ? body.type : null,
+      anonymous,
     );
     return NextResponse.json({ confession }, { status: 202 });
   } catch (err) {

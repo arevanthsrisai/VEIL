@@ -25,6 +25,8 @@ type ConfessionDetail = {
   myReactions?: string[]
   rejectionReason?: string | null
   isOwn: boolean
+  type?: string | null
+  anonymous?: boolean
 }
 
 export function ConfessionDetailView({ id }: { id: string }) {
@@ -116,11 +118,13 @@ export function ConfessionDetailView({ id }: { id: string }) {
               <div className="flex items-center gap-2.5">
                 <Avatar size="sm" aria-hidden>
                   <AvatarFallback className="text-sm">
-                    {item.avatarEmoji}
+                    {item.anonymous ? "🎭" : item.avatarEmoji}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{item.nickname}</p>
+                  <p className="truncate text-sm font-medium">
+                    {item.anonymous ? "🕵️ Anonymous" : item.nickname}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {relativeTime(item.createdAt)}
                   </p>
@@ -130,8 +134,13 @@ export function ConfessionDetailView({ id }: { id: string }) {
                 </div>
               </div>
               {item.title && <CardTitle className="text-lg">{item.title}</CardTitle>}
-              {(item.isOwn || item.status !== "APPROVED") && (
+              {(item.type || item.isOwn || item.status !== "APPROVED") && (
                 <div className="flex flex-wrap items-center gap-1.5">
+                  {item.type && (
+                    <Badge variant="secondary">
+                      {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                    </Badge>
+                  )}
                   {item.isOwn && <Badge variant="outline">Your post</Badge>}
                   {item.status === "PENDING" && (
                     <Badge variant="secondary">Pending review ⏳</Badge>

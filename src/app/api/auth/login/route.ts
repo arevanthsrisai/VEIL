@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import {
   SESSION_COOKIE,
   createSession,
@@ -35,17 +34,10 @@ export async function POST(req: Request) {
     const ok = await verifyPassword(password, user?.password_hash ?? DUMMY_HASH);
     if (!user || !ok)
       return NextResponse.json({ error: "Invalid username or password." }, { status: 401 });
-    // ponytail: one extra SELECT because auth.ts (not owned here) doesn't select restricted_until;
-    // fold into findUserByUsername if auth.ts ownership changes
-    const { rows: restrictionRows } = await query<{ restricted_until: Date | null }>(
-      `SELECT restricted_until FROM users WHERE id = $1`,
-      [user.id],
-    );
-    const restrictedUntil = restrictionRows[0]?.restricted_until ?? null;
-    if (restrictedUntil !== null && restrictedUntil.getTime() > Date.now())
+    if (user.restricted_until !== null && user.restricted_until.getTime() > Date.now())
       return NextResponse.json({ error: "Account restricted. Try again later." }, { status: 403 });
     const { token, expiresAt } = await createSession(user.id);
-    const res = NextResponse.json({ user: toPublicUser(user) });
+    const res = NextResponse.json({ user: toPublicUser(user), mustChangePassword: user.must_change_password });
     res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
     return res;
   } catch (err) {
