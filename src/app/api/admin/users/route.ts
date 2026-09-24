@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, type PublicUser } from "@/lib/auth";
-import { isAdmin, listAdminUsers, setUserRole, validateRoleValue } from "@/lib/moderation";
+import { isAdmin, setUserRole, validateRoleValue } from "@/lib/moderation";
+import { listUsers } from "@/lib/admin-users";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ function invalidId(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && err.code === "22P02";
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   let user: PublicUser | null;
   try {
     user = await getCurrentUser();
@@ -23,8 +24,9 @@ export async function GET() {
   }
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isAdmin(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const search = new URL(req.url).searchParams.get("search") ?? undefined;
   try {
-    return NextResponse.json({ users: await listAdminUsers() });
+    return NextResponse.json({ users: await listUsers(search) });
   } catch (err) {
     return dbError(err, "Failed to load users.");
   }

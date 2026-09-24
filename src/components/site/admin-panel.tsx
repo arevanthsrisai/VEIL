@@ -9,11 +9,21 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { relativeTime } from "@/components/site/format"
 import { PollManager } from "@/components/site/poll-manager"
@@ -29,11 +39,14 @@ type Stats = {
 
 type AdminUser = {
   id: string
+  username: string
   nickname: string
   avatarEmoji: string
   role: string
   createdAt: string
   restrictedUntil: string | null
+  mustChangePassword: boolean
+  postCount: number
 }
 
 const ROLES = ["USER", "MODERATOR", "ADMIN"] as const
@@ -43,6 +56,16 @@ const ROLE_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
   ADMIN: "default",
   MODERATOR: "secondary",
   USER: "outline",
+}
+
+function generateTempPassword(): string {
+  // 12 chars, no ambiguous glyphs (0/O/1/l/I) — passes the API's 8-128 check
+  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  const bytes = new Uint8Array(12)
+  crypto.getRandomValues(bytes)
+  let out = ""
+  for (const b of bytes) out += chars[b % chars.length]
+  return out
 }
 
 function StatCard({ label, value, sub }: { label: string; value: number; sub?: string }) {
@@ -63,13 +86,19 @@ function UserRow({
   busy,
   onRoleChange,
   onRestrict,
+  onResetPassword,
+  onRemove,
 }: {
   user: AdminUser
   isSelf: boolean
   busy: boolean
   onRoleChange: (userId: string, role: Role) => void
   onRestrict: (userId: string, days: number | null) => void
+  onResetPassword: (userId: string) => void
+  onRemove: (userId: string) => void
 }) {
+  // 0 = closed, 1 = first warning, 2 = final confirmation
+  const [confirmStep, setConfirmStep] = useState<0 | 1 | 2>(0)
   const restricted = user.restrictedUntil !== null && new Date(user.restrictedUntil).getTime() > Date.now()
   return (
     <Card className="items-center gap-3 py-3" size="sm">
@@ -78,13 +107,15 @@ function UserRow({
           <AvatarFallback className="text-sm">{user.avatarEmoji}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+          <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
             {user.nickname}
             {isSelf && <span className="text-xs font-normal text-muted-foreground">(you)</span>}
             {restricted && <Badge variant="destructive">Restricted 🚫</Badge>}
+            {user.mustChangePassword && <Badge variant="secondary">Temp password 🔑</Badge>}
           </p>
-          <p className="text-xs text-muted-foreground">
-            Joined {relativeTime(user.createdAt)}
+          <p className="truncate text-xs text-muted-foreground">
+            @{user.username} · Joined {relativeTime(user.createdAt)} · {user.postCount}{" "}
+            {user.postCount === 1 ? "post" : "posts"}
             {restricted && ` · until ${new Date(user.restrictedUntil!).toLocaleString()}`}
           </p>
         </div>
@@ -119,8 +150,68 @@ function UserRow({
               {restricted ? "Remove restriction" : "Restrict 7 days"}
             </DropdownMenuItem>
           )}
+          {!isSelf && (
+            <DropdownMenuItem onClick={() => onResetPassword(user.id)}>
+              Reset password
+            </DropdownMenuItem>
+          )}
+          {user.role === "USER" && !isSelf && (
+            <DropdownMenuItem onClick={() => setConfirmStep(1)}>
+              Remove account
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
+      <Dialog
+        open={confirmStep > 0}
+        onOpenChange={(open) => {
+          if (!open) setConfirmStep(0)
+        }}
+      >
+        <DialogContent>
+          {confirmStep === 1 ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Remove {user.nickname}?</DialogTitle>
+                <DialogDescription>
+                  This permanently deletes @{user.username} along with their posts, reactions, and
+                  reports. Only the audit trail remains.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setConfirmStep(0)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => setConfirmStep(2)}>Continue</Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Are you sure?</DialogTitle>
+                <DialogDescription>
+                  Removing @{user.username} cannot be undone. Their content is deleted for good.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setConfirmStep(1)}>
+                  Go back
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={busy}
+                  onClick={() => {
+                    setConfirmStep(0)
+                    onRemove(user.id)
+                  }}
+                >
+                  Remove account
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
@@ -128,11 +219,16 @@ function UserRow({
 export function AdminPanel() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [users, setUsers] = useState<AdminUser[]>([])
+  const [usersStatus, setUsersStatus] = useState<"loading" | "ready" | "error">("loading")
   const [status, setStatus] = useState<"loading" | "ready" | "forbidden" | "error">("loading")
   const [refreshing, setRefreshing] = useState(false)
   const [busyUserId, setBusyUserId] = useState<string | null>(null)
   const [myId, setMyId] = useState<string | null>(null)
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
+  const [search, setSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  // the generated temp password lives only here — dropped the moment the dialog closes
+  const [pwShown, setPwShown] = useState<{ nickname: string; password: string } | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -153,24 +249,21 @@ export function AdminPanel() {
       if (initial) setStatus("loading")
       else setRefreshing(true)
       try {
-        const [statsRes, usersRes, logsRes] = await Promise.all([
+        const [statsRes, logsRes] = await Promise.all([
           fetch("/api/admin/stats"),
-          fetch("/api/admin/users"),
           fetch("/api/admin/audit-logs"),
         ])
-        if (usersRes.status === 401 || statsRes.status === 401) {
+        if (statsRes.status === 401) {
           router.push("/login")
           return
         }
-        if (usersRes.status === 403 || statsRes.status === 403) {
+        if (statsRes.status === 403) {
           setStatus("forbidden")
           return
         }
-        if (!statsRes.ok || !usersRes.ok) throw new Error("Request failed")
+        if (!statsRes.ok) throw new Error("Request failed")
         const statsData = (await statsRes.json()) as { stats: Stats }
-        const usersData = (await usersRes.json()) as { users: AdminUser[] }
         setStats(statsData.stats)
-        setUsers(usersData.users ?? [])
         if (logsRes.ok) {
           const logsData = (await logsRes.json()) as { logs: AuditLogEntry[] }
           setLogs(logsData.logs ?? [])
@@ -186,9 +279,41 @@ export function AdminPanel() {
     [router]
   )
 
+  const loadUsers = useCallback(
+    async (term: string) => {
+      try {
+        const res = await fetch(`/api/admin/users${term ? `?search=${encodeURIComponent(term)}` : ""}`)
+        if (res.status === 401) {
+          router.push("/login")
+          return
+        }
+        if (res.status === 403) {
+          setStatus("forbidden")
+          return
+        }
+        if (!res.ok) throw new Error("Request failed")
+        const data = (await res.json()) as { users: AdminUser[] }
+        setUsers(data.users ?? [])
+        setUsersStatus("ready")
+      } catch {
+        setUsersStatus("error")
+      }
+    },
+    [router]
+  )
+
   useEffect(() => {
     load(true)
   }, [load])
+
+  useEffect(() => {
+    void loadUsers(debouncedSearch)
+  }, [debouncedSearch, loadUsers])
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    return () => clearTimeout(t)
+  }, [search])
 
   async function changeRole(userId: string, role: Role) {
     const target = users.find((u) => u.id === userId)
@@ -245,6 +370,67 @@ export function AdminPanel() {
     }
   }
 
+  async function resetPassword(userId: string) {
+    const target = users.find((u) => u.id === userId)
+    const tempPassword = generateTempPassword()
+    setBusyUserId(userId)
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tempPassword }),
+      })
+      if (res.status === 401) {
+        router.push("/login")
+        return
+      }
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(data?.error ?? "Couldn't reset password.")
+        return
+      }
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, mustChangePassword: true } : u)))
+      setPwShown({ nickname: target?.nickname ?? "user", password: tempPassword })
+    } catch {
+      toast.error("Couldn't reset password.")
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
+  async function removeAccount(userId: string) {
+    const target = users.find((u) => u.id === userId)
+    setBusyUserId(userId)
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, { method: "DELETE" })
+      if (res.status === 401) {
+        router.push("/login")
+        return
+      }
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(data?.error ?? "Couldn't remove account.")
+        return
+      }
+      setUsers((prev) => prev.filter((u) => u.id !== userId))
+      toast.success(`Removed ${target?.nickname ?? "user"}`)
+    } catch {
+      toast.error("Couldn't remove account.")
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
+  async function copyPassword() {
+    if (!pwShown) return
+    try {
+      await navigator.clipboard.writeText(pwShown.password)
+      toast.success("Copied — it won't be shown again after you close this.")
+    } catch {
+      toast.error("Copy failed — select the password and copy manually.")
+    }
+  }
+
   if (status === "forbidden") {
     return (
       <Card className="items-center gap-2 py-12 text-center">
@@ -272,7 +458,10 @@ export function AdminPanel() {
           variant="outline"
           size="sm"
           disabled={refreshing}
-          onClick={() => load(false)}
+          onClick={() => {
+            load(false)
+            void loadUsers(debouncedSearch)
+          }}
         >
           <RefreshCwIcon
             data-icon="inline-start"
@@ -332,35 +521,69 @@ export function AdminPanel() {
           </div>
 
           <div>
-            <div className="flex items-end justify-between gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">Users</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   You can't demote yourself below Admin.
                 </p>
               </div>
+              <Input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search nickname or username"
+                aria-label="Search users"
+                className="w-full sm:w-64"
+              />
             </div>
           </div>
 
           <div className="grid gap-2">
-            {users.length === 0 && (
+            {usersStatus === "loading" && (
+              <div className="grid gap-2" aria-hidden>
+                {[0, 1, 2].map((i) => (
+                  <Card key={i} className="items-center gap-3 py-3" size="sm">
+                    <div className="flex w-full items-center gap-2.5">
+                      <Skeleton className="size-6 rounded-full" />
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="ml-auto h-5 w-16 rounded-4xl" />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+            {usersStatus === "error" && (
+              <Card className="items-center gap-2 py-8 text-center">
+                <p className="font-medium">Couldn't load users</p>
+                <Button variant="outline" size="sm" onClick={() => void loadUsers(debouncedSearch)}>
+                  Retry
+                </Button>
+              </Card>
+            )}
+            {usersStatus === "ready" && users.length === 0 && (
               <Card className="items-center gap-2 py-10 text-center">
                 <span className="text-4xl" aria-hidden>
                   🫥
                 </span>
-                <p className="font-medium">No users yet</p>
+                <p className="font-medium">
+                  {debouncedSearch ? "No users match your search" : "No users yet"}
+                </p>
               </Card>
             )}
-            {users.map((user) => (
-              <UserRow
-                key={user.id}
-                user={user}
-                isSelf={user.id === myId}
-                busy={busyUserId === user.id}
-                onRoleChange={(id, role) => void changeRole(id, role)}
-                onRestrict={(id, days) => void changeRestrict(id, days)}
-              />
-            ))}
+            {usersStatus === "ready" &&
+              users.map((user) => (
+                <UserRow
+                  key={user.id}
+                  user={user}
+                  isSelf={user.id === myId}
+                  busy={busyUserId === user.id}
+                  onRoleChange={(id, role) => void changeRole(id, role)}
+                  onRestrict={(id, days) => void changeRestrict(id, days)}
+                  onResetPassword={(id) => void resetPassword(id)}
+                  onRemove={(id) => void removeAccount(id)}
+                />
+              ))}
           </div>
 
           <PollManager />
@@ -378,6 +601,34 @@ export function AdminPanel() {
           </div>
         </>
       )}
+
+      <Dialog
+        open={pwShown !== null}
+        onOpenChange={(open) => {
+          if (!open) setPwShown(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Temporary password for {pwShown?.nickname}</DialogTitle>
+            <DialogDescription>Shown once — copy it now. It won't be displayed again.</DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2.5 py-1.5 font-mono text-sm">
+              {pwShown?.password}
+            </code>
+            <Button variant="outline" size="sm" onClick={() => void copyPassword()}>
+              Copy
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            The user must change this password at their next login.
+          </p>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" size="sm" />}>Done</DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

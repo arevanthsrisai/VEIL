@@ -30,15 +30,6 @@ export type OpenReportItem = {
   authorId: string | null;
 };
 
-export type AdminUserItem = {
-  id: string;
-  nickname: string;
-  avatarEmoji: string;
-  role: Role;
-  createdAt: string;
-  restrictedUntil: string | null;
-};
-
 export type AdminStats = {
   users: number;
   confessions: { total: number; pending: number; approved: number; rejected: number };
@@ -111,15 +102,6 @@ type OpenReportRow = {
   confession_status: string | null;
   confession_content: string | null;
   author_id: string | null;
-};
-
-type AdminUserRow = {
-  id: string;
-  nickname: string;
-  avatar_emoji: string;
-  role: Role;
-  created_at: string;
-  restricted_until: string | null;
 };
 
 type NotificationRow = {
@@ -328,20 +310,6 @@ export async function resolveReport(
     id,
   ]);
   return { ok: true };
-}
-
-export async function listAdminUsers(): Promise<AdminUserItem[]> {
-  const { rows } = await query<AdminUserRow>(
-    `SELECT id, nickname, avatar_emoji, role, created_at, restricted_until FROM users ORDER BY created_at DESC`,
-  );
-  return rows.map((row) => ({
-    id: row.id,
-    nickname: row.nickname,
-    avatarEmoji: row.avatar_emoji,
-    role: row.role,
-    createdAt: new Date(row.created_at).toISOString(),
-    restrictedUntil: row.restricted_until ? new Date(row.restricted_until).toISOString() : null,
-  }));
 }
 
 export async function setUserRole(
