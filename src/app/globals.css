@@ -128,3 +128,9 @@
     @apply font-sans;
   }
 }
+/* polish: gentle entrance + refined hover; reduced-motion respected */
+@media (prefers-reduced-motion: no-preference) {
+  main > * { animation: veil-enter 240ms ease-out both; }
+  @keyframes veil-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+}
+main > .grid > * { transition: box-shadow 160ms ease; }

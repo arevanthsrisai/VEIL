@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <SiteNavbar />
         <AnnouncementBanner />
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:py-10">
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 pb-24 sm:py-10 sm:pb-10">
           {children}
         </main>
         <footer className="border-t border-border/60 py-6">

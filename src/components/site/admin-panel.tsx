@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogClose,
@@ -509,18 +510,37 @@ export function AdminPanel() {
       )}
 
       {status === "ready" && stats && (
-        <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Tabs defaultValue="overview">
+          <TabsList className="w-full flex-wrap">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="polls">Polls</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="audit">Audit</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="mt-3 grid gap-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard label="Users" value={stats.users} />
             <StatCard
               label="Confessions"
               value={stats.confessions.total}
               sub={`${stats.confessions.pending} pending · ${stats.confessions.approved} approved · ${stats.confessions.rejected} rejected`}
             />
-            <StatCard label="Open reports" value={stats.openReports} />
-          </div>
+              <StatCard label="Open reports" value={stats.openReports} />
+            </div>
+            <Card className="items-center gap-2 py-8 text-center">
+              <span className="text-4xl" aria-hidden>
+                🛡️
+              </span>
+              <p className="font-medium">Control center</p>
+              <p className="text-sm text-muted-foreground">
+                Use the tabs above to manage users, polls, settings, and the audit trail.
+              </p>
+            </Card>
+          </TabsContent>
 
-          <div>
+          <TabsContent value="users" className="mt-3 grid gap-3">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">Users</h2>
@@ -537,7 +557,6 @@ export function AdminPanel() {
                 className="w-full sm:w-64"
               />
             </div>
-          </div>
 
           <div className="grid gap-2">
             {usersStatus === "loading" && (
@@ -584,22 +603,27 @@ export function AdminPanel() {
                   onRemove={(id) => void removeAccount(id)}
                 />
               ))}
-          </div>
-
-          <PollManager />
-
-          <SettingsPanel />
-
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Audit log 📜</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Moderation, admin, and security events. Newest first.
-            </p>
-            <div className="mt-3">
-              <AuditLogList entries={logs} />
             </div>
-          </div>
-        </>
+          </TabsContent>
+
+          <TabsContent value="polls" className="mt-3">
+            <PollManager />
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-3">
+            <SettingsPanel />
+          </TabsContent>
+
+          <TabsContent value="audit" className="mt-3 grid gap-3">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">Audit log 📜</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Moderation, admin, and security events. Newest first.
+              </p>
+            </div>
+            <AuditLogList entries={logs} />
+          </TabsContent>
+        </Tabs>
       )}
 
       <Dialog
