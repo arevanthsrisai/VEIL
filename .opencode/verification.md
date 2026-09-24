@@ -2,6 +2,16 @@
 
 Status legend: [ ] pending  [x] pass  [f] fail  [~] partial
 
+## FINAL PRODUCTION READINESS (2026-09-24) — checkpoint c824dc9
+- [x] Git: tree clean, HEAD = origin/main = c824dc9, no secrets tracked
+- [x] Application: tsc CLEAN, vitest 33/33, build CLEAN (48 routes), zero TODO/stub remnants, zero comment remnants
+- [x] Render: latest deploy (c824dc9) LIVE via autoDeploy
+- [x] Production smoke (live URL): health 200/Neon ok · feed(anon) 401 · register 201 · create 202 · detail(own pending) 200 · bookmark(pending) 404 (APPROVED-only) · search/random/today/polls 200 · announcements 200
+- [x] Security: all audits green (H1/M1/L1/L4 fixed); restriction enforced in validateSession + login; Turnstile fail-closed; RBAC verified via E2E
+- [x] Database: Neon PG 18.6, 12 tables live, schema matches queries, indexes present
+- [~] Visual/aesthetic UI review: NOT PERFORMED (no vision-capable model on this system) — screenshots at .playwright-mcp/shot-login-*.png for user review; all MEASURABLE criteria pass (contrast 4.7-19.8:1, no overflow, touch targets ≥28px, light/dark functional, console clean)
+- [~] External: Voroa provisioning broken (needs Voroa support); Neon password rotation recommended; Turnstile keys unset (disabled)
+
 ## Security Hardening (2026-09-22)
 - [x] Turnstile fail-closed/clear: both keys → verify; neither → disabled; partial → fail closed + clear log (independent review: PASS)
 - [x] Siteverify fetch: AbortSignal.timeout(5000) + try/catch fail-closed (no hang path, no exception leak)
